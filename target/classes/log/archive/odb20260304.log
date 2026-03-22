@@ -1,0 +1,326 @@
+------------------------------------------------------------------------------------------------------------------------
+
+[2026-03-04 11:04:48 #1 store] 
+Database 'C:\Users\Usuario\OneDrive - UPV EHU\FresaObsidian\02_School\0002Año\IS\Laboratorio\IS_25-26_Proyecto\src\main\resources\products.temp' is opened by 9304@DESKTOP-Helen
+
+[2026-03-04 11:04:48 #2 type] 
+Type domain.User is not enhanced.
+
+[2026-03-04 11:04:48 #3 type] 
+Type domain.Seller is not enhanced.
+
+[2026-03-04 11:04:48 #4 type] 
+Type domain.Sale is not enhanced.
+
+[2026-03-04 11:04:48 #5 type] 
+Type domain.Buyer is not enhanced.
+
+[2026-03-04 11:04:48 #6 type] 
+Type domain.AcceptedOffer is not enhanced.
+
+[2026-03-04 11:05:08 #7 type.registry] 
+New type java.util.ArrayList<domain.Sale>
+
+[2026-03-04 11:05:08 #8 type.registry] 
+New type com.objectdb.o.LMT
+
+[2026-03-04 11:05:08 #9 type.registry] 
+New type com.objectdb.o.VAL
+
+[2026-03-04 11:05:08 #10 type.registry] 
+New type com.objectdb.o.RFV
+
+[2026-03-04 11:05:10 #11 type.registry] 
+New type java.util.ArrayList<domain.AcceptedOffer>
+
+------------------------------------------------------------------------------------------------------------------------
+
+[2026-03-04 11:07:50 #1 store] 
+Database 'C:\Users\Usuario\OneDrive - UPV EHU\FresaObsidian\02_School\0002Año\IS\Laboratorio\IS_25-26_Proyecto\src\main\resources\products.temp' has been recovered (tr. 16-18)
+
+[2026-03-04 11:07:50 #2 store] 
+Database 'C:\Users\Usuario\OneDrive - UPV EHU\FresaObsidian\02_School\0002Año\IS\Laboratorio\IS_25-26_Proyecto\src\main\resources\products.temp' is opened by 11848@DESKTOP-Helen
+
+[2026-03-04 11:07:50 #3 type] 
+Type domain.User is not enhanced.
+
+[2026-03-04 11:07:50 #4 type] 
+Type domain.Seller is not enhanced.
+
+[2026-03-04 11:07:50 #5 type] 
+Type domain.Sale is not enhanced.
+
+[2026-03-04 11:07:50 #6 type] 
+Type domain.Buyer is not enhanced.
+
+[2026-03-04 11:07:50 #7 type] 
+Type domain.AcceptedOffer is not enhanced.
+
+------------------------------------------------------------------------------------------------------------------------
+
+[2026-03-04 11:34:42 #1 store] 
+Database 'C:\Users\Usuario\OneDrive - UPV EHU\FresaObsidian\02_School\0002Año\IS\Laboratorio\IS_25-26_Proyecto\src\main\resources\products.temp' is opened by 21876@DESKTOP-Helen
+
+[2026-03-04 11:34:42 #2 type] 
+Type domain.User is not enhanced.
+
+[2026-03-04 11:34:42 #3 type] 
+Type domain.Seller is not enhanced.
+
+[2026-03-04 11:34:42 #4 type] 
+Type domain.Sale is not enhanced.
+
+[2026-03-04 11:34:42 #5 type] 
+Type domain.Buyer is not enhanced.
+
+[2026-03-04 11:34:42 #6 type] 
+Type domain.AcceptedOffer is not enhanced.
+
+------------------------------------------------------------------------------------------------------------------------
+
+[2026-03-04 19:46:54 #1 store] 
+Database 'C:\Users\Usuario\OneDrive - UPV EHU\FresaObsidian\02_School\0002Año\IS\Laboratorio\IS_25-26_Proyecto\src\main\resources\products.temp' is opened by 13580@DESKTOP-Helen
+
+[2026-03-04 19:46:54 #2 type.registry] 
+New type domain.User
+
+[2026-03-04 19:46:54 #3 type.registry] 
+New type domain.Seller
+
+[2026-03-04 19:46:54 #4 type] 
+Type domain.User is not enhanced.
+
+[2026-03-04 19:46:54 #5 type] 
+Type domain.Seller is not enhanced.
+
+[2026-03-04 19:46:54 #6 type.registry] 
+New type domain.Sale
+
+[2026-03-04 19:46:54 #7 type] 
+Type domain.Sale is not enhanced.
+
+[2026-03-04 19:46:54 #8 type.registry] 
+New type java.util.ArrayList<java.lang.Object>
+
+[2026-03-04 19:46:54 #9 type.registry] 
+New type java.util.ArrayList<domain.Sale>
+
+[2026-03-04 19:46:54 #10 type.registry] 
+New type domain.Buyer
+
+[2026-03-04 19:46:54 #11 type] 
+Type domain.Buyer is not enhanced.
+
+[2026-03-04 19:46:54 #12 type.registry] 
+New type domain.AcceptedOffer
+
+[2026-03-04 19:46:54 #13 type] 
+Type domain.AcceptedOffer is not enhanced.
+
+[2026-03-04 19:46:54 #14 type.registry] 
+New type java.util.ArrayList<domain.AcceptedOffer>
+
+------------------------------------------------------------------------------------------------------------------------
+
+[2026-03-04 19:48:17 #1 store] 
+Database 'C:\Users\Usuario\OneDrive - UPV EHU\FresaObsidian\02_School\0002Año\IS\Laboratorio\IS_25-26_Proyecto\src\main\resources\products.temp' is opened by 21848@DESKTOP-Helen
+
+[2026-03-04 19:48:17 #2 type.registry] 
+New type domain.User
+
+[2026-03-04 19:48:17 #3 type.registry] 
+New type domain.Seller
+
+[2026-03-04 19:48:17 #4 type] 
+Type domain.User is not enhanced.
+
+[2026-03-04 19:48:17 #5 type] 
+Type domain.Seller is not enhanced.
+
+[2026-03-04 19:48:17 #6 type.registry] 
+New type domain.Sale
+
+[2026-03-04 19:48:17 #7 type] 
+Type domain.Sale is not enhanced.
+
+[2026-03-04 19:48:18 #8 type.registry] 
+New type java.util.ArrayList<java.lang.Object>
+
+[2026-03-04 19:48:18 #9 type.registry] 
+New type java.util.ArrayList<domain.Sale>
+
+[2026-03-04 19:48:18 #10 type.registry] 
+New type domain.Buyer
+
+[2026-03-04 19:48:18 #11 type] 
+Type domain.Buyer is not enhanced.
+
+[2026-03-04 19:48:18 #12 type.registry] 
+New type domain.AcceptedOffer
+
+[2026-03-04 19:48:18 #13 type] 
+Type domain.AcceptedOffer is not enhanced.
+
+[2026-03-04 19:48:18 #14 type.registry] 
+New type java.util.ArrayList<domain.AcceptedOffer>
+
+------------------------------------------------------------------------------------------------------------------------
+
+[2026-03-04 19:51:12 #1 store] 
+Database 'C:\Users\Usuario\OneDrive - UPV EHU\FresaObsidian\02_School\0002Año\IS\Laboratorio\IS_25-26_Proyecto\src\main\resources\products.temp' is opened by 11052@DESKTOP-Helen
+
+[2026-03-04 19:51:12 #2 type.registry] 
+New type domain.User
+
+[2026-03-04 19:51:12 #3 type.registry] 
+New type domain.Seller
+
+[2026-03-04 19:51:12 #4 type] 
+Type domain.User is not enhanced.
+
+[2026-03-04 19:51:12 #5 type] 
+Type domain.Seller is not enhanced.
+
+[2026-03-04 19:51:12 #6 type.registry] 
+New type domain.Sale
+
+[2026-03-04 19:51:12 #7 type] 
+Type domain.Sale is not enhanced.
+
+[2026-03-04 19:51:12 #8 type.registry] 
+New type java.util.ArrayList<java.lang.Object>
+
+[2026-03-04 19:51:12 #9 type.registry] 
+New type java.util.ArrayList<domain.Sale>
+
+[2026-03-04 19:51:12 #10 type.registry] 
+New type domain.Buyer
+
+[2026-03-04 19:51:12 #11 type] 
+Type domain.Buyer is not enhanced.
+
+[2026-03-04 19:51:12 #12 type.registry] 
+New type domain.AcceptedOffer
+
+[2026-03-04 19:51:12 #13 type] 
+Type domain.AcceptedOffer is not enhanced.
+
+[2026-03-04 19:51:12 #14 type.registry] 
+New type java.util.ArrayList<domain.AcceptedOffer>
+
+------------------------------------------------------------------------------------------------------------------------
+
+[2026-03-04 19:51:37 #1 store] 
+Database 'C:\Users\Usuario\OneDrive - UPV EHU\FresaObsidian\02_School\0002Año\IS\Laboratorio\IS_25-26_Proyecto\src\main\resources\products.temp' is opened by 24872@DESKTOP-Helen
+
+[2026-03-04 19:51:37 #2 type.registry] 
+New type domain.User
+
+[2026-03-04 19:51:37 #3 type.registry] 
+New type domain.Seller
+
+[2026-03-04 19:51:37 #4 type] 
+Type domain.User is not enhanced.
+
+[2026-03-04 19:51:37 #5 type] 
+Type domain.Seller is not enhanced.
+
+[2026-03-04 19:51:37 #6 type.registry] 
+New type domain.Sale
+
+[2026-03-04 19:51:37 #7 type] 
+Type domain.Sale is not enhanced.
+
+[2026-03-04 19:51:37 #8 type.registry] 
+New type java.util.ArrayList<java.lang.Object>
+
+[2026-03-04 19:51:37 #9 type.registry] 
+New type java.util.ArrayList<domain.Sale>
+
+[2026-03-04 19:51:37 #10 type.registry] 
+New type domain.Buyer
+
+[2026-03-04 19:51:37 #11 type] 
+Type domain.Buyer is not enhanced.
+
+[2026-03-04 19:51:37 #12 type.registry] 
+New type domain.AcceptedOffer
+
+[2026-03-04 19:51:37 #13 type] 
+Type domain.AcceptedOffer is not enhanced.
+
+[2026-03-04 19:51:37 #14 type.registry] 
+New type java.util.ArrayList<domain.AcceptedOffer>
+
+[2026-03-04 19:51:53 #15 type.registry] 
+New type com.objectdb.o.LMT
+
+[2026-03-04 19:51:53 #16 type.registry] 
+New type com.objectdb.o.VAL
+
+[2026-03-04 19:51:53 #17 type.registry] 
+New type com.objectdb.o.RFV
+
+------------------------------------------------------------------------------------------------------------------------
+
+[2026-03-04 19:57:24 #1 store] 
+Database 'C:\Users\Usuario\OneDrive - UPV EHU\FresaObsidian\02_School\0002Año\IS\Laboratorio\IS_25-26_Proyecto\src\main\resources\products.temp' has been recovered (tr. 1-21)
+
+[2026-03-04 19:57:24 #2 store] 
+Database 'C:\Users\Usuario\OneDrive - UPV EHU\FresaObsidian\02_School\0002Año\IS\Laboratorio\IS_25-26_Proyecto\src\main\resources\products.temp' is opened by 15396@DESKTOP-Helen
+
+[2026-03-04 19:57:25 #3 type] 
+Type domain.User is not enhanced.
+
+[2026-03-04 19:57:25 #4 type] 
+Type domain.Seller is not enhanced.
+
+[2026-03-04 19:57:25 #5 type] 
+Type domain.Sale is not enhanced.
+
+[2026-03-04 19:57:25 #6 type] 
+Type domain.Buyer is not enhanced.
+
+[2026-03-04 19:57:25 #7 type] 
+Type domain.AcceptedOffer is not enhanced.
+
+------------------------------------------------------------------------------------------------------------------------
+
+[2026-03-04 20:15:48 #1 store] 
+Database 'C:\Users\Usuario\OneDrive - UPV EHU\FresaObsidian\02_School\0002Año\IS\Laboratorio\IS_25-26_Proyecto\src\main\resources\products.temp' is opened by 28180@DESKTOP-Helen
+
+[2026-03-04 20:15:48 #2 type] 
+Type domain.User is not enhanced.
+
+[2026-03-04 20:15:48 #3 type] 
+Type domain.Seller is not enhanced.
+
+[2026-03-04 20:15:48 #4 type] 
+Type domain.Sale is not enhanced.
+
+[2026-03-04 20:15:48 #5 type] 
+Type domain.Buyer is not enhanced.
+
+[2026-03-04 20:15:48 #6 type] 
+Type domain.AcceptedOffer is not enhanced.
+
+------------------------------------------------------------------------------------------------------------------------
+
+[2026-03-04 20:18:58 #1 store] 
+Database 'C:\Users\Usuario\OneDrive - UPV EHU\FresaObsidian\02_School\0002Año\IS\Laboratorio\IS_25-26_Proyecto\src\main\resources\products.temp' is opened by 3836@DESKTOP-Helen
+
+[2026-03-04 20:18:58 #2 type] 
+Type domain.User is not enhanced.
+
+[2026-03-04 20:18:58 #3 type] 
+Type domain.Seller is not enhanced.
+
+[2026-03-04 20:18:58 #4 type] 
+Type domain.Sale is not enhanced.
+
+[2026-03-04 20:18:58 #5 type] 
+Type domain.Buyer is not enhanced.
+
+[2026-03-04 20:18:58 #6 type] 
+Type domain.AcceptedOffer is not enhanced.
+

@@ -1,0 +1,27 @@
+src/main/java/
+├── domain/
+│   ├── User.java (NEW)
+│   ├── Buyer.java (NEW)
+│   ├── AcceptedOffer.java (NEW)
+│   └── IntegerAdapter.java
+├── dataAccess/
+│   └── DataAccess.java (MODIFIED)
+├── businessLogic/
+│   ├── BLFacade.java (MODIFIED)
+│   └── BLFacadeImplementation.java (MODIFIED)
+├── gui/
+│   ├── LoginGUI.java (NEW)
+│   ├── RegisterGUI.java (NEW)
+│   ├── BuyerMainGUI.java (NEW)
+│   ├── AcceptOfferGUI.java (NEW)
+│   ├── ViewAcceptedOffersGUI.java (NEW)
+│   ├── MainGUI.java (MODIFIED)
+│   └── ApplicationLauncher.java
+├── exceptions/
+│   ├── UserAlreadyExistsException.java (NEW)
+│   ├── WeakPasswordException.java (NEW)
+│   └── InvalidEmailException.java (NEW)
+└── resources/
+    ├── Etiquetas_es.properties (MODIFIED)
+    ├── Etiquetas_eu.properties (MODIFIED)
+    └── Etiquetas_en.properties (MODIFIED)

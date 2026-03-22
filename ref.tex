@@ -1,0 +1,159 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[spanish]{babel}
+\usepackage{graphicx}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{hyperref}
+
+\definecolor{codebg}{RGB}{245,245,245}
+\definecolor{codegreen}{RGB}{0,128,0}
+\definecolor{codepurple}{RGB}{128,0,128}
+\definecolor{codeblue}{RGB}{0,0,200}
+
+\lstset{
+    language=Java,
+    backgroundcolor=\color{codebg},
+    basicstyle=\ttfamily\footnotesize,
+    keywordstyle=\color{codeblue}\bfseries,
+    stringstyle=\color{codegreen},
+    commentstyle=\color{codegreen}\itshape,
+    numberstyle=\tiny\color{gray},
+    numbers=left,
+    numbersep=5pt,
+    breaklines=true,
+    frame=single,
+    rulecolor=\color{gray},
+    tabsize=4,
+    showstringspaces=false,
+    literate={á}{{\'a}}1 {é}{{\'e}}1 {í}{{\'i}}1 {ó}{{\'o}}1 {ú}{{\'u}}1 {ñ}{{\~n}}1
+}
+
+\title{\textbf{Antidoping -- Marrón 2} \\ \large Ingeniería del Software 2025--2026}
+\author{Ibai Martinez}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+% ============================================================
+\section{Código del Antidoping}
+% ============================================================
+
+% >>> Pon aquí tu código de antidoping <<<
+\textbf{Código:} \texttt{9}
+
+% ============================================================
+\section{Descripción del cambio propuesto}
+% ============================================================
+
+El cambio consiste en modificar el comportamiento del botón inferior (\textit{Book Flight}) de la interfaz gráfica para que, al pulsarlo, muestre en el desplegable (\texttt{JComboBox}) \textbf{todos los vuelos concretos que tienen como destino la ciudad de llegada (Arrival City) seleccionada}, independientemente de:
+
+\begin{itemize}
+    \item La \textbf{fecha} seleccionada.
+    \item La \textbf{ciudad de salida} (Departing City) seleccionada.
+\end{itemize}
+
+Además, el botón debe estar \textbf{siempre habilitado}, sin necesidad de haber pulsado previamente ``Look for Concrete Flights'' ni de haber seleccionado un vuelo o tipo de asiento.
+
+% ============================================================
+\section{Implementación}
+% ============================================================
+
+Los cambios se realizaron en dos ficheros:
+
+\subsection{FlightManager.java (Capa de lógica de negocio)}
+
+Se añadió un nuevo método \texttt{getAllConcreteFlightsTo(String arrivingCity)} que realiza una consulta JPA directa a la base de datos ObjectDB para obtener todos los \texttt{ConcreteFlight} cuyo vuelo tiene como ciudad de llegada la indicada:
+
+\begin{lstlisting}
+public Collection<ConcreteFlight> getAllConcreteFlightsTo(String arrivingCity) {
+    TypedQuery<ConcreteFlight> query = db.createQuery(
+        "SELECT cf FROM ConcreteFlight cf WHERE cf.flight.arrivingCity = :city",
+        ConcreteFlight.class);
+    query.setParameter("city", arrivingCity);
+    return query.getResultList();
+}
+\end{lstlisting}
+
+Este método navega por la relación \texttt{cf.flight.arrivingCity} en JPQL, lo que permite obtener todos los vuelos concretos a esa ciudad sin importar la fecha ni la ciudad de origen.
+
+\subsection{FlightBooking.java (Capa de presentación)}
+
+Se reescribió la lógica del botón \texttt{bookFlight}:
+
+\begin{lstlisting}
+bookFlight = new JButton("Book Flight");
+bookFlight.addActionListener(new ActionListener() {
+    public void actionPerformed(ActionEvent e) {
+        // Mostrar todos los vuelos a la ciudad de llegada seleccionada
+        flightInfo.removeAllElements();
+        fareButtonGroup.clearSelection();
+        bussinesTicket.setEnabled(false);
+        firstTicket.setEnabled(false);
+        touristTicket.setEnabled(false);
+        selectedConcreteFlight = null;
+
+        Object arrive = arrivalCity.getSelectedItem();
+        if (arrive != null) {
+            Collection<ConcreteFlight> allFlights =
+                businessLogic.getAllConcreteFlightsTo(arrive.toString());
+            for (ConcreteFlight cf : allFlights) {
+                flightInfo.addElement(cf);
+            }
+            if (allFlights.isEmpty()) {
+                searchResult.setText("No flights to " + arrive.toString());
+            } else {
+                searchResult.setText("All flights to " + arrive.toString() + ":");
+            }
+        } else {
+            searchResult.setText("Select an arrival city.");
+        }
+    }
+});
+\end{lstlisting}
+
+Cambios clave:
+\begin{itemize}
+    \item Se \textbf{eliminó toda la lógica anterior} de reserva (\texttt{bookConcreteFlight}) del botón.
+    \item Se \textbf{eliminaron todas las llamadas a} \texttt{bookFlight.setEnabled(false)} para que el botón esté siempre activo.
+    \item Al pulsar, se lee la \textit{Arrival City} del combo y se llama a \texttt{getAllConcreteFlightsTo()}, que devuelve todos los vuelos concretos a esa ciudad.
+    \item Los resultados se cargan en el \texttt{JComboBox} (\texttt{flightInfo}).
+\end{itemize}
+
+\subsection{Datos de prueba modificados}
+
+Para verificar que el cambio funciona con \textbf{distintas fechas}, se modificaron las fechas de algunos vuelos concretos de los vuelos F2 y F5 (ambos con destino Madrid):
+
+\begin{lstlisting}
+// F2: Donostia -> Madrid (fechas variadas)
+f2.addConcreteFlight("CF2-1", newDate(2023,2,15), 1,2,3, "12:00"); // Marzo
+f2.addConcreteFlight("CF2-2", newDate(2023,3,10), 3,0,3, "12:30"); // Abril
+f2.addConcreteFlight("CF2-3", newDate(2023,4,5),  1,2,2, "13:00"); // Mayo
+f2.addConcreteFlight("CF2-6", newDate(2023,5,20), 3,3,0, "16:00"); // Junio
+f2.addConcreteFlight("CF2-7", newDate(2023,6,1),  3,3,0, "17:00"); // Julio
+
+// F5: Sevilla -> Madrid (fechas variadas)
+f5.addConcreteFlight("CF5-1", newDate(2023,2,22), 1,2,3, "8:00");  // Marzo
+f5.addConcreteFlight("CF5-4", newDate(2023,4,23), 3,3,0, "14:00"); // Mayo
+\end{lstlisting}
+
+% ============================================================
+\section{Capturas de pantalla}
+% ============================================================
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.8\textwidth]{1.png}
+    \caption{Interfaz inicial: el botón ``Book Flight'' está habilitado por defecto, sin necesidad de haber buscado vuelos previamente.}
+\end{figure}
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.8\textwidth]{2.png}
+    \caption{Tras pulsar ``Book Flight'': el desplegable muestra todos los vuelos concretos a la ciudad de llegada seleccionada, con distintas fechas y distintas ciudades de origen.}
+\end{figure}
+
+\end{document}

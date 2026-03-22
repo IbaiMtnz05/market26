@@ -1,0 +1,45 @@
+\babel@toc {spanish}{}\relax 
+\contentsline {part}{I\hspace {1em}Implementación Primera Iteración}{3}{part.1}%
+\contentsline {section}{\numberline {1}Casos de Uso Implementados}{3}{section.1}%
+\contentsline {section}{\numberline {2}Cambios en el Modelo del Dominio}{3}{section.2}%
+\contentsline {section}{\numberline {3}Cambios en DataAccess}{3}{section.3}%
+\contentsline {section}{\numberline {4}Cambios en la Lógica de Negocio}{4}{section.4}%
+\contentsline {section}{\numberline {5}Cambios en la Interfaz Gráfica}{4}{section.5}%
+\contentsline {section}{\numberline {6}Excepciones y Recursos}{4}{section.6}%
+\contentsline {section}{\numberline {7}Arquitectura Respetada}{4}{section.7}%
+\contentsline {section}{\numberline {8}Inicialización de Datos}{5}{section.8}%
+\contentsline {section}{\numberline {9}Resumen de Cambios y Tiempo Dedicado}{5}{section.9}%
+\contentsline {subsection}{\numberline {9.1}Componentes Modificados}{5}{subsection.9.1}%
+\contentsline {subsection}{\numberline {9.2}Tiempo Dedicado al Proyecto}{5}{subsection.9.2}%
+\contentsline {part}{II\hspace {1em}Organización y Metodología del Equipo}{6}{part.2}%
+\contentsline {section}{\numberline {10}Miembros del Equipo}{6}{section.10}%
+\contentsline {section}{\numberline {11}Organización del Trabajo}{6}{section.11}%
+\contentsline {subsection}{\numberline {11.1}Estrategia de Desarrollo}{6}{subsection.11.1}%
+\contentsline {subsection}{\numberline {11.2}Distribución de Responsabilidades}{6}{subsection.11.2}%
+\contentsline {section}{\numberline {12}Colaboración y Comunicación}{7}{section.12}%
+\contentsline {subsection}{\numberline {12.1}Metodología de Trabajo}{7}{subsection.12.1}%
+\contentsline {subsection}{\numberline {12.2}Puntos de Integración}{7}{subsection.12.2}%
+\contentsline {section}{\numberline {13}Decisiones Arquitectónicas}{8}{section.13}%
+\contentsline {subsection}{\numberline {13.1}Herencia en JPA}{8}{subsection.13.1}%
+\contentsline {subsection}{\numberline {13.2}Patrón de Fachada}{8}{subsection.13.2}%
+\contentsline {subsection}{\numberline {13.3}Manejo de Sesiones}{8}{subsection.13.3}%
+\contentsline {section}{\numberline {14}Flujo de Trabajo Completo}{8}{section.14}%
+\contentsline {subsection}{\numberline {14.1}Flujo: Registro de Usuario}{8}{subsection.14.1}%
+\contentsline {subsection}{\numberline {14.2}Flujo: Login}{9}{subsection.14.2}%
+\contentsline {subsection}{\numberline {14.3}Flujo: Aceptar Oferta}{9}{subsection.14.3}%
+\contentsline {section}{\numberline {15}Tecnologías Utilizadas}{9}{section.15}%
+\contentsline {subsection}{\numberline {15.1}Backend}{9}{subsection.15.1}%
+\contentsline {subsection}{\numberline {15.2}Frontend}{10}{subsection.15.2}%
+\contentsline {subsection}{\numberline {15.3}Idiomas Soportados}{10}{subsection.15.3}%
+\contentsline {section}{\numberline {16}Validaciones Implementadas}{10}{section.16}%
+\contentsline {section}{\numberline {17}Pruebas Realizadas}{10}{section.17}%
+\contentsline {subsection}{\numberline {17.1}Casos de Prueba Exitosos}{11}{subsection.17.1}%
+\contentsline {section}{\numberline {18}Estructura Final del Código}{11}{section.18}%
+\contentsline {subsection}{\numberline {18.1}Árbol de Directorios - Cambios}{12}{subsection.18.1}%
+\contentsline {section}{\numberline {19}Mejoras Futuras}{12}{section.19}%
+\contentsline {subsection}{\numberline {19.1}Para Iteración 2}{12}{subsection.19.1}%
+\contentsline {subsection}{\numberline {19.2}Aspectos Técnicos a Mejorar}{13}{subsection.19.2}%
+\contentsline {section}{\numberline {20}Conclusiones}{13}{section.20}%
+\contentsline {subsection}{\numberline {20.1}Logros de la Iteración 1}{13}{subsection.20.1}%
+\contentsline {subsection}{\numberline {20.2}Puntos Fuertes}{13}{subsection.20.2}%
+\contentsline {subsection}{\numberline {20.3}Reflexión del Equipo}{14}{subsection.20.3}%
