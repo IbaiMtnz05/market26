@@ -1,0 +1,16 @@
+bin/
+build/
+doc/
+target/
+log/
+src/main/resources/log/
+src/main/resources/*.temp
+src/main/resources/*.temp$
+.classpath
+.project
+.settings/
+*.pdf
+*.log
+*.tex
+*.temp
+*.temp$
