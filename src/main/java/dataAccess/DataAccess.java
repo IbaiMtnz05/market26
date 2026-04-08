@@ -4,6 +4,7 @@ import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -19,11 +20,7 @@ import javax.persistence.TypedQuery;
 
 import configuration.ConfigXML;
 import configuration.UtilDate;
-import domain.Seller;
-import domain.User;
-import domain.AcceptedOffer;
-import domain.Buyer;
-import domain.Sale;
+import domain.*;
 import exceptions.FileNotUploadedException;
 import exceptions.InvalidEmailException;
 import exceptions.InvalidFieldException;
@@ -47,6 +44,10 @@ public class DataAccess  {
 
 
 	ConfigXML c=ConfigXML.getInstance();
+
+	private String msg(String key) {
+		return ResourceBundle.getBundle("Etiquetas").getString(key);
+	}
 
     public DataAccess()  {
 		if (c.isDatabaseInitialized()) {
@@ -154,51 +155,43 @@ public class DataAccess  {
  	 * @throws SaleAlreadyExistException if the same product already exists for the seller
 	 */
 	public Sale createSale(String title, String description, int status, float price,  Date pubDate, String sellerEmail, File file) throws  FileNotUploadedException, MustBeLaterThanTodayException, SaleAlreadyExistException, InvalidFieldException, InvalidPriceException {
-		
+		if (title == null || title.trim().isEmpty()) {
+			throw new InvalidFieldException(msg("DataAccess.ErrorTitleRequired"));
+		}
+		if (description == null || description.trim().isEmpty()) {
+			throw new InvalidFieldException(msg("DataAccess.ErrorDescriptionRequired"));
+		}
+		if (price <= 0) {
+			throw new InvalidPriceException(msg("DataAccess.ErrorPriceMustBePositive"));
+		}
+		if (pubDate.before(UtilDate.trim(new Date()))) {
+			throw new MustBeLaterThanTodayException(msg("DataAccess.ErrorSaleMustBeLaterThanToday"));
+		}
 
-		System.out.println(">> DataAccess: createProduct=> title= "+title+" seller="+sellerEmail);
+		saveImageIfPresent(file);
+		db.getTransaction().begin();
 		try {
-			// Validar campos no vacíos
-			if (title == null || title.trim().isEmpty()) {
-				throw new InvalidFieldException("El título es obligatorio");
-			}
-			if (description == null || description.trim().isEmpty()) {
-				throw new InvalidFieldException("La descripción es obligatoria");
-			}
-			
-			// Validar precio positivo
-			if (price <= 0) {
-				throw new InvalidPriceException("El precio debe ser mayor a 0");
-			}
-
-			if(pubDate.before(UtilDate.trim(new Date()))) {
-				throw new MustBeLaterThanTodayException(ResourceBundle.getBundle("Etiquetas").getString("DataAccess.ErrorSaleMustBeLaterThanToday"));
-			}
-			db.getTransaction().begin();
-			
 			Seller seller = db.find(Seller.class, sellerEmail);
 			if (seller == null) {
 				db.getTransaction().rollback();
 				return null;
 			}
+
 			if (seller.doesSaleExist(title)) {
-				db.getTransaction().commit();
-				throw new SaleAlreadyExistException(ResourceBundle.getBundle("Etiquetas").getString("DataAccess.SaleAlreadyExist"));
+				db.getTransaction().rollback();
+				throw new SaleAlreadyExistException(msg("DataAccess.SaleAlreadyExist"));
 			}
 
 			Sale sale = seller.addSale(title, description, status, price, pubDate, file);
 			db.persist(sale);
 			db.getTransaction().commit();
-			 System.out.println("sale stored "+sale+ " "+seller);
-
 			return sale;
-		} catch (NullPointerException e) {
-			e.printStackTrace();
-			db.getTransaction().commit();
-			return null;
+		} catch (RuntimeException e) {
+			if (db.getTransaction().isActive()) {
+				db.getTransaction().rollback();
+			}
+			throw e;
 		}
-		
-		
 	}
 	
 	/**
@@ -264,6 +257,12 @@ public class DataAccess  {
 		
 	}
 
+	/**
+	 * Retrieves an image file from the specified path and resizes it to a standard size.
+	 * @param fileName the name of the image file to retrieve
+	 * @return a BufferedImage object containing the resized image, or null if the file cannot be read
+	 * @throws IOException if an error occurs while reading the image file
+	 */
 	public BufferedImage getFile(String fileName) {
 		File file=new File(basePath+fileName);
 		BufferedImage targetImg=null;
@@ -276,6 +275,11 @@ public class DataAccess  {
 
 	}
 	
+	/**
+	 * Resizes the given image to a standard size defined by baseSize.
+	 * @param originalImage the original BufferedImage to be resized
+	 * @return a new BufferedImage object containing the resized image
+	 */
 	public BufferedImage rescale(BufferedImage originalImage)
     {
 		System.out.println("rescale "+originalImage);
@@ -286,9 +290,37 @@ public class DataAccess  {
         return resizedImage;
     }
 	
+	/**
+	 * Persiste una imagen en disco si el archivo está presente.
+	 * @param file archivo de imagen a guardar
+	 */
+	private void saveImageIfPresent(File file) {
+		if (file == null) {
+			return;
+		}
+		try {
+			BufferedImage img = ImageIO.read(file);
+			if (img == null) {
+				return;
+			}
+			File output = new File(basePath + file.getName());
+			ImageIO.write(img, "png", output);
+		} catch (IOException e) {
+			throw new RuntimeException("Error saving image file: " + file.getName(), e);
+		}
+	}
+	
 	public void close(){
-		db.close();
-		System.out.println("DataAcess closed");
+		try {
+			if (db != null && db.isOpen()) {
+				db.close();
+			}
+		} finally {
+			if (emf != null && emf.isOpen()) {
+				emf.close();
+			}
+		}
+		System.out.println("DataAccess closed");
 	}
 
 	/**
@@ -321,21 +353,21 @@ public class DataAccess  {
 		try {
 			// Validar campos no vacíos
 			if (email == null || email.trim().isEmpty()) {
-				throw new InvalidFieldException("El email es obligatorio");
+				throw new InvalidFieldException(msg("DataAccess.ErrorEmailRequired"));
 			}
 			if (name == null || name.trim().isEmpty()) {
-				throw new InvalidFieldException("El nombre es obligatorio");
+				throw new InvalidFieldException(msg("DataAccess.ErrorNameRequired"));
 			}
 			if (password == null || password.trim().isEmpty()) {
-				throw new InvalidFieldException("La contraseña es obligatoria");
+				throw new InvalidFieldException(msg("DataAccess.ErrorPasswordRequired"));
 			}
 			if (shippingAddress == null || shippingAddress.trim().isEmpty()) {
-				throw new InvalidFieldException("La dirección de envío es obligatoria");
+				throw new InvalidFieldException(msg("DataAccess.ErrorShippingAddressRequired"));
 			}
 			
 			// Validar formato de email
 			if (!isValidEmail(email)) {
-				throw new InvalidEmailException("El formato del email es inválido");
+				throw new InvalidEmailException(msg("DataAccess.ErrorInvalidEmail"));
 			}
 			
 			db.getTransaction().begin();
@@ -344,7 +376,7 @@ public class DataAccess  {
 			User existing = db.find(User.class, email);
 			if (existing != null) {
 				db.getTransaction().rollback();
-				throw new UserAlreadyExistsException("El email ya está registrado");
+				throw new UserAlreadyExistsException(msg("DataAccess.ErrorEmailAlreadyRegistered"));
 			}
 			
 			// Crear objeto Buyer
@@ -366,7 +398,7 @@ public class DataAccess  {
 				db.getTransaction().rollback();
 			}
 			e.printStackTrace();
-			throw new RuntimeException("Error al registrar comprador: " + e.getMessage(), e);
+			throw new RuntimeException(msg("DataAccess.ErrorRegisterBuyer") + ": " + e.getMessage(), e);
 		}
 	}
 
@@ -380,21 +412,21 @@ public class DataAccess  {
 		try {
 			// Validar campos no vacíos
 			if (email == null || email.trim().isEmpty()) {
-				throw new InvalidFieldException("El email es obligatorio");
+				throw new InvalidFieldException(msg("DataAccess.ErrorEmailRequired"));
 			}
 			if (name == null || name.trim().isEmpty()) {
-				throw new InvalidFieldException("El nombre es obligatorio");
+				throw new InvalidFieldException(msg("DataAccess.ErrorNameRequired"));
 			}
 			if (password == null || password.trim().isEmpty()) {
-				throw new InvalidFieldException("La contraseña es obligatoria");
+				throw new InvalidFieldException(msg("DataAccess.ErrorPasswordRequired"));
 			}
 			if (bankAccount == null || bankAccount.trim().isEmpty()) {
-				throw new InvalidFieldException("La cuenta bancaria es obligatoria");
+				throw new InvalidFieldException(msg("DataAccess.ErrorBankAccountRequired"));
 			}
 			
 			// Validar formato de email
 			if (!isValidEmail(email)) {
-				throw new InvalidEmailException("El formato del email es inválido");
+				throw new InvalidEmailException(msg("DataAccess.ErrorInvalidEmail"));
 			}
 			
 			db.getTransaction().begin();
@@ -403,7 +435,7 @@ public class DataAccess  {
 			User existing = db.find(User.class, email);
 			if (existing != null) {
 				db.getTransaction().rollback();
-				throw new UserAlreadyExistsException("El email ya está registrado");
+				throw new UserAlreadyExistsException(msg("DataAccess.ErrorEmailAlreadyRegistered"));
 			}
 			
 			Seller seller = new Seller(email, name, bankAccount);
@@ -423,7 +455,7 @@ public class DataAccess  {
 				db.getTransaction().rollback();
 			}
 			e.printStackTrace();
-			throw new RuntimeException("Error al registrar vendedor: " + e.getMessage(), e);
+			throw new RuntimeException(msg("DataAccess.ErrorRegisterSeller") + ": " + e.getMessage(), e);
 		}
 	}
 
@@ -453,13 +485,15 @@ public class DataAccess  {
 				// El precio debe ser positivo
 				if (negotiatedPrice <= 0) {
 					db.getTransaction().rollback();
-					throw new InvalidPriceException("El precio debe ser mayor a 0");
+					throw new InvalidPriceException(msg("DataAccess.ErrorPriceMustBePositive"));
 				}
 				// El precio negociado no puede ser mayor que el precio original
 				if (negotiatedPrice > sale.getPrice()) {
 					db.getTransaction().rollback();
-					throw new InvalidPriceException("El precio negociado (" + negotiatedPrice + 
-						") no puede ser mayor que el precio de la oferta (" + sale.getPrice() + ")");
+					throw new InvalidPriceException(MessageFormat.format(
+						msg("DataAccess.ErrorNegotiatedPriceTooHigh"),
+						negotiatedPrice,
+						sale.getPrice()));
 				}
 			}
 			
@@ -533,10 +567,11 @@ public class DataAccess  {
 	 */
 	public List<Sale> getAvailableSalesForBuyer(Date pubDate) {
 		try {
-			TypedQuery<Sale> queryPublished = db.createQuery(
-				"SELECT s FROM Sale s",
+			TypedQuery<Sale> query = db.createQuery(
+				"SELECT s FROM Sale s WHERE s.pubDate <= :pubDate",
 				Sale.class);
-			return queryPublished.getResultList();
+			query.setParameter("pubDate", pubDate);
+			return query.getResultList();
 		} catch (Exception e) {
 			e.printStackTrace();
 			return new ArrayList<>();
@@ -559,8 +594,178 @@ public class DataAccess  {
 		}
 	}
 	
-	// ============== MÉTODOS DE VALIDACIÓN ==============
-	
+	/**
+	 * Registra la decisión de venta de un comprador
+	 */
+    public DecisionVenta decidirComprador(Integer saleNumber, Integer acceptedOfferId,
+            CriterioDecision criterio, String motivo) {
+    	try {
+    		db.getTransaction().begin();
+    		
+    		Sale sale = db.find(Sale.class, saleNumber);
+    		AcceptedOffer acceptedOffer = db.find(AcceptedOffer.class, acceptedOfferId);
+    		
+    		if (sale == null || acceptedOffer == null) {
+    			db.getTransaction().rollback();
+    			return null;	
+    		}
+    		
+    		DecisionVenta decision = new DecisionVenta(sale,acceptedOffer.getBuyer(),sale.getSeller(),criterio,motivo);
+    		
+    		db.persist(decision);
+    		db.getTransaction().commit();
+    		return decision;
+    	} catch (Exception e) {
+    		if (db.getTransaction().isActive()) {
+    			db.getTransaction().rollback();	
+    		}
+    		e.printStackTrace();
+    		return null;	
+    	}	
+    }
+    
+    /**
+     * Registra el cobro de una venta aceptada
+     */
+    public TransaccionPago procesarCobro(Integer saleNumber, String buyerEmail, float importe)
+            throws InvalidPriceException {
+        try {
+            if (importe <= 0) {
+				throw new InvalidPriceException(msg("DataAccess.ErrorAmountMustBePositive"));
+            }
+
+            db.getTransaction().begin();
+
+            Sale sale = db.find(Sale.class, saleNumber);
+            Buyer buyer = db.find(Buyer.class, buyerEmail);
+
+            if (sale == null || buyer == null) {
+                db.getTransaction().rollback();
+                return null;
+            }
+
+            TransaccionPago transaccion = new TransaccionPago(sale, buyer, importe);
+            transaccion.setEstado(EstadoPago.CONFIRMADO);
+            transaccion.setReferenciaPasarela("SIM-" + System.currentTimeMillis());
+
+            db.persist(transaccion);
+            db.getTransaction().commit();
+            return transaccion;
+        } catch (InvalidPriceException e) {
+            if (db.getTransaction().isActive()) {
+                db.getTransaction().rollback();
+            }
+            throw e;
+        } catch (Exception e) {
+            if (db.getTransaction().isActive()) {
+                db.getTransaction().rollback();
+            }
+            e.printStackTrace();
+            return null;
+        }
+    }
+    /**
+	 * Calcula la comisión del marketplace para una transacción de pago dada.
+	 */
+    public ComisionMarketplace calcularComision(Integer transaccionPagoId, float porcentaje) {
+        try {
+            db.getTransaction().begin();
+
+            TransaccionPago transaccion = db.find(TransaccionPago.class, transaccionPagoId);
+            if (transaccion == null || transaccion.getEstado() != EstadoPago.CONFIRMADO) {
+                db.getTransaction().rollback();
+                return null;
+            }
+
+            ComisionMarketplace comision = new ComisionMarketplace(transaccion, transaccion.getSale().getSeller(), porcentaje);
+            db.persist(comision);
+
+            db.getTransaction().commit();
+            return comision;
+        } catch (Exception e) {
+            if (db.getTransaction().isActive()) {
+                db.getTransaction().rollback();
+            }
+            e.printStackTrace();
+            return null;
+        }
+    }
+    
+    /**
+     * Registra una solicitud de reembolso para una transacción de pago dada, con validaciones para el importe y tipo de reembolso.
+     */
+    public Reembolso solicitarReembolso(Integer transaccionPagoId, float importe,
+            TipoReembolso tipo, String motivo) {
+    	try {
+    		db.getTransaction().begin();
+    		
+    		TransaccionPago transaccion = db.find(TransaccionPago.class, transaccionPagoId);
+    		if (transaccion == null) {
+    			db.getTransaction().rollback();
+    			return null;
+    		}
+    		
+    		float importeValido = tipo == TipoReembolso.TOTAL ? transaccion.getImporte() : importe;
+    		if (tipo == TipoReembolso.PARCIAL && importe > transaccion.getImporte()) {
+    			db.getTransaction().rollback();
+    			return null;	
+    		}
+			
+			Reembolso reembolso = new Reembolso(transaccion, importeValido, tipo, motivo);
+			reembolso.setEstado(EstadoReembolso.APROBADO);
+			reembolso.setFechaResolucion(new Date());
+			
+			db.persist(reembolso);
+			db.getTransaction().commit();
+			return reembolso;
+		} catch (Exception e) {
+			if (db.getTransaction().isActive()) {
+				db.getTransaction().rollback();
+			}
+			e.printStackTrace();
+			return null;
+		}
+	}
+    
+	/**
+	 * Obtiene las decisiones de venta registradas para un vendedor dado
+	 * @param sellerEmail el email del vendedor
+	 * @return una lista de objetos DecisionVenta asociados al vendedor, o una lista vacía si no se encuentran registros
+	 */
+    public List<DecisionVenta> getDecisionVentasBySeller(String sellerEmail) {
+        TypedQuery<DecisionVenta> query = db.createQuery(
+            "SELECT d FROM DecisionVenta d WHERE d.seller.email = :email",
+            DecisionVenta.class);
+        query.setParameter("email", sellerEmail);
+        return query.getResultList();
+    }
+
+	/**
+	 * Obtiene las comisiones del marketplace registradas para un vendedor dado
+	 * @param sellerEmail el email del vendedor
+	 * @return una lista de objetos ComisionMarketplace asociados al vendedor, o una lista vacía si no se encuentran registros
+	 */
+    public List<ComisionMarketplace> getComisionesBySeller(String sellerEmail) {
+        TypedQuery<ComisionMarketplace> query = db.createQuery(
+            "SELECT c FROM ComisionMarketplace c WHERE c.seller.email = :email",
+            ComisionMarketplace.class);
+        query.setParameter("email", sellerEmail);
+        return query.getResultList();
+    }
+
+	/**
+	 * Obtiene los reembolsos registrados para un comprador dado
+	 * @param buyerEmail el email del comprador
+	 * @return una lista de objetos Reembolso asociados al comprador, o una lista vacía si no se encuentran registros
+	 */
+    public List<Reembolso> getReembolsosByBuyer(String buyerEmail) {
+        TypedQuery<Reembolso> query = db.createQuery(
+            "SELECT r FROM Reembolso r WHERE r.transaccionPago.buyer.email = :email",
+            Reembolso.class);
+        query.setParameter("email", buyerEmail);
+        return query.getResultList();
+    }
+
 	/**
 	 * Valida el formato de un email
 	 * @param email el email a validar

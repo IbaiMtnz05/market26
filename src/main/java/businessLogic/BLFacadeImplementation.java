@@ -13,8 +13,14 @@ import javax.jws.WebService;
 import dataAccess.DataAccess;
 import domain.AcceptedOffer;
 import domain.Buyer;
+import domain.ComisionMarketplace;
+import domain.CriterioDecision;
+import domain.DecisionVenta;
+import domain.Reembolso;
 import domain.Sale;
 import domain.Seller;
+import domain.TipoReembolso;
+import domain.TransaccionPago;
 import domain.User;
 import exceptions.FileNotUploadedException;
 import exceptions.InvalidEmailException;
@@ -36,6 +42,19 @@ public class BLFacadeImplementation  implements BLFacade {
 
 		private static final String basePath="src/main/resources/images/";
 	DataAccess dbManager;
+
+	private interface DbAction<T> {
+		T run();
+	}
+
+	private <T> T execute(DbAction<T> action) {
+		dbManager.open();
+		try {
+			return action.run();
+		} finally {
+			dbManager.close();
+		}
+	}
 
 	public BLFacadeImplementation()  {		
 		System.out.println("Creating BLFacadeImplementation instance");
@@ -64,10 +83,7 @@ public class BLFacadeImplementation  implements BLFacade {
     */
 	@WebMethod 
 	public List<Sale> getSales(String desc){
-		dbManager.open();
-		List<Sale>  rides=dbManager.getSales(desc);
-		dbManager.close();
-		return rides;
+		return execute(() -> dbManager.getSales(desc));
 	}
 	
 	/**
@@ -75,10 +91,7 @@ public class BLFacadeImplementation  implements BLFacade {
 	*/
 	@WebMethod 
 	public List<Sale> getPublishedSales(String desc, Date pubDate) {
-		dbManager.open();
-		List<Sale>  rides=dbManager.getPublishedSales(desc,pubDate);
-		dbManager.close();
-		return rides;
+		return execute(() -> dbManager.getPublishedSales(desc, pubDate));
 	}
 	
 	/**
@@ -92,9 +105,7 @@ public class BLFacadeImplementation  implements BLFacade {
 	 * Closes the database connection.
 	 */
     public void close() {
-		DataAccess dB4oManager=new DataAccess();
-		dB4oManager.close();
-
+		dbManager.close();
 	}
 
 	/**
@@ -125,10 +136,7 @@ public class BLFacadeImplementation  implements BLFacade {
 	 */
 	@WebMethod
 	public User login(String email, String password) {
-		dbManager.open();
-		User user = dbManager.login(email, password);
-		dbManager.close();
-		return user;
+		return execute(() -> dbManager.login(email, password));
 	}
 
 	/**
@@ -222,5 +230,98 @@ public class BLFacadeImplementation  implements BLFacade {
         return sales;
     }
     
+    /**
+	 * {@inheritDoc}
+	 */
+    @WebMethod
+    public DecisionVenta decidirComprador(Integer saleNumber, Integer acceptedOfferId,
+                                          CriterioDecision criterio, String motivo) {
+        dbManager.open();
+        try {
+            return dbManager.decidirComprador(saleNumber, acceptedOfferId, criterio, motivo);
+        } finally {
+            dbManager.close();
+        }
+    }
+   
+    /**
+	 * {@inheritDoc}
+	 */
+    @WebMethod
+    public TransaccionPago procesarCobro(Integer saleNumber, String buyerEmail, float importe)
+            throws InvalidPriceException {
+        dbManager.open();
+        try {
+            return dbManager.procesarCobro(saleNumber, buyerEmail, importe);
+        } finally {
+            dbManager.close();
+        }
+    }
+    
+    /**
+     * {@inheritDoc}
+     */
+    @WebMethod
+    public ComisionMarketplace calcularComision(Integer transaccionPagoId, float porcentaje) {
+        dbManager.open();
+        try {
+            return dbManager.calcularComision(transaccionPagoId, porcentaje);
+        } finally {
+            dbManager.close();
+        }
+    }
+    
+    /**
+	 * {@inheritDoc}
+	 */
+    @WebMethod
+    public Reembolso solicitarReembolso(Integer transaccionPagoId, float importe,
+                                        TipoReembolso tipo, String motivo) {
+        dbManager.open();
+        try {
+            return dbManager.solicitarReembolso(transaccionPagoId, importe, tipo, motivo);
+        } finally {
+            dbManager.close();
+        }
+    }
+    
+    /**
+	 * {@inheritDoc}
+	 */
+    @WebMethod
+    public List<DecisionVenta> getDecisionVentasBySeller(String sellerEmail) {
+        dbManager.open();
+        try {
+            return dbManager.getDecisionVentasBySeller(sellerEmail);
+        } finally {
+            dbManager.close();
+        }
+    }
+    
+    /**
+     * {@inheritDoc}
+     */
+    @WebMethod
+    public List<ComisionMarketplace> getComisionesBySeller(String sellerEmail) {
+        dbManager.open();
+        try {
+            return dbManager.getComisionesBySeller(sellerEmail);
+        } finally {
+            dbManager.close();
+        }
+    }
+    
+    /**
+     * {@inheritDoc}
+     */
+    @WebMethod
+    public List<Reembolso> getReembolsosByBuyer(String buyerEmail) {
+        dbManager.open();
+        try {
+            return dbManager.getReembolsosByBuyer(buyerEmail);
+        } finally {
+            dbManager.close();
+        }
+    }
 }
 

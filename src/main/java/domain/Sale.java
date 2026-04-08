@@ -1,12 +1,9 @@
 package domain;
 
-import java.awt.image.BufferedImage;
 import java.io.File;
-import java.io.IOException;
 import java.io.Serializable;
 import java.util.Date;
 
-import javax.imageio.ImageIO;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
@@ -61,30 +58,13 @@ public class Sale implements Serializable {
 	 */
 	public Sale(String title, String description, int status, float price, Date pubDate, File file, Seller seller) {
 		super();
-
 		this.title = title;
 		this.description = description;
 		this.status = status;
-		this.price=price;
-		this.pubDate=pubDate;
-		if (file!=null) {
-		    this.fileName=file.getName();
-			try {
-				BufferedImage img1 = ImageIO.read(file);
-
-				String path="src/main/resources/images/";
-				File outputfile = new File(path+file.getName());
-		    
-		    
-			   ImageIO.write(img1, "png", outputfile);  // ignore returned boolean
-
-			} catch(IOException ex) {
-				//System.out.println("Write error for " + outputfile.getPath()  ": " + ex.getMessage());
-		}
-		}
-
+		this.price = price;
+		this.pubDate = pubDate;
+		this.fileName = (file != null) ? file.getName() : null;
 		this.seller = seller;
-		
 	}
 	
 	/**

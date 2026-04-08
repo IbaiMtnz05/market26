@@ -8,7 +8,6 @@ import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.Locale;
-import java.util.ResourceBundle;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
@@ -39,13 +38,12 @@ public class LoginGUI extends JFrame {
     private JLabel lblEmail;
     private JLabel lblPassword;
     private JLabel lblTitle;
-    private ResourceBundle labels = ResourceBundle.getBundle("Etiquetas");
     
     /**
      * Creates the login window.
      */
     public LoginGUI() {
-        setTitle(labels.getString("LoginGUI.Title"));
+        setTitle(I18n.t("LoginGUI.Title"));
         setSize(460, 320);
         setLocationRelativeTo(null);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -58,7 +56,7 @@ public class LoginGUI extends JFrame {
         JPanel topPanel = new JPanel(new BorderLayout(5, 5));
         topPanel.setOpaque(false);
         
-        lblTitle = new JLabel(labels.getString("LoginGUI.AppTitle"), SwingConstants.CENTER);
+        lblTitle = new JLabel(I18n.t("LoginGUI.AppTitle"), SwingConstants.CENTER);
         lblTitle.setFont(new Font("Segoe UI", Font.BOLD, 24));
         topPanel.add(lblTitle, BorderLayout.CENTER);
         
@@ -76,7 +74,7 @@ public class LoginGUI extends JFrame {
         panel.setOpaque(false);
         
         // Email
-        lblEmail = new JLabel(labels.getString("LoginGUI.Email"));
+        lblEmail = new JLabel(I18n.t("LoginGUI.Email"));
         lblEmail.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         panel.add(lblEmail);
         txtEmail = new JTextField();
@@ -84,7 +82,7 @@ public class LoginGUI extends JFrame {
         panel.add(txtEmail);
         
         // Password
-        lblPassword = new JLabel(labels.getString("LoginGUI.Password"));
+        lblPassword = new JLabel(I18n.t("LoginGUI.Password"));
         lblPassword.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         panel.add(lblPassword);
         txtPassword = new JPasswordField();
@@ -93,13 +91,13 @@ public class LoginGUI extends JFrame {
         
         // Botón Login
         panel.add(new JLabel(""));
-        btnLogin = new JButton(labels.getString("LoginGUI.Login"));
+        btnLogin = new JButton(I18n.t("LoginGUI.Login"));
         btnLogin.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         panel.add(btnLogin);
         
         // Botón Registro
         panel.add(new JLabel(""));
-        btnRegister = new JButton(labels.getString("LoginGUI.Register"));
+        btnRegister = new JButton(I18n.t("LoginGUI.Register"));
         btnRegister.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         panel.add(btnRegister);
         
@@ -134,35 +132,25 @@ public class LoginGUI extends JFrame {
     }
     
     private void changeLanguage() {
-        int index = cmbLanguage.getSelectedIndex();
-        Locale newLocale;
-        
-        switch(index) {
-            case 0: newLocale = Locale.forLanguageTag("es"); break;
-            case 1: newLocale = Locale.forLanguageTag("en"); break;
-            case 2: newLocale = Locale.forLanguageTag("eu"); break;
-            default: newLocale = Locale.forLanguageTag("es");
-        }
-        
-        Locale.setDefault(newLocale);
-        labels = ResourceBundle.getBundle("Etiquetas", newLocale);
+        Locale newLocale = I18n.localeFromIndex(cmbLanguage.getSelectedIndex());
+        I18n.setLocale(newLocale);
         updateLabels();
     }
     
     private void updateLabels() {
-        setTitle(labels.getString("LoginGUI.Title"));
-        lblTitle.setText(labels.getString("LoginGUI.AppTitle"));
-        lblEmail.setText(labels.getString("LoginGUI.Email"));
-        lblPassword.setText(labels.getString("LoginGUI.Password"));
-        btnLogin.setText(labels.getString("LoginGUI.Login"));
-        btnRegister.setText(labels.getString("LoginGUI.Register"));
+        setTitle(I18n.t("LoginGUI.Title"));
+        lblTitle.setText(I18n.t("LoginGUI.AppTitle"));
+        lblEmail.setText(I18n.t("LoginGUI.Email"));
+        lblPassword.setText(I18n.t("LoginGUI.Password"));
+        btnLogin.setText(I18n.t("LoginGUI.Login"));
+        btnRegister.setText(I18n.t("LoginGUI.Register"));
     }
     private void handleLogin() {
         String email = txtEmail.getText().trim();
         String password = new String(txtPassword.getPassword());
         
         if (email.isEmpty() || password.isEmpty()) {
-            lblMessage.setText(labels.getString("RegisterGUI.FillAllFields"));
+            lblMessage.setText(I18n.t("RegisterGUI.FillAllFields"));
             return;
         }
         
@@ -172,13 +160,13 @@ public class LoginGUI extends JFrame {
         
         if (user == null) {
             lblMessage.setForeground(Color.RED);
-            lblMessage.setText(labels.getString("LoginGUI.InvalidCredentials"));
+            lblMessage.setText(I18n.t("LoginGUI.InvalidCredentials"));
             return;
         }
         
         // Login exitoso
         lblMessage.setForeground(Color.GREEN);
-        lblMessage.setText(labels.getString("BuyerMainGUI.Welcome") + " " + user.getName());
+        lblMessage.setText(I18n.t("BuyerMainGUI.Welcome") + " " + user.getName());
         
         // Abrir ventana correspondiente según tipo de usuario
         this.dispose();  // Cerrar ventana de login

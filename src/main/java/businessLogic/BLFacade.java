@@ -10,8 +10,14 @@ import javax.jws.WebService;
 
 import domain.AcceptedOffer;
 import domain.Buyer;
+import domain.ComisionMarketplace;
+import domain.CriterioDecision;
+import domain.DecisionVenta;
+import domain.Reembolso;
 import domain.Sale;
 import domain.Seller;
+import domain.TipoReembolso;
+import domain.TransaccionPago;
 import domain.User;
 import exceptions.FileNotUploadedException;
 import exceptions.InvalidEmailException;
@@ -151,4 +157,73 @@ public interface BLFacade  {
      */
     @WebMethod
     public List<Sale> getSalesBySellerEmail(String sellerEmail);
+
+    /**
+	 * Decide sobre una venta aceptada (aceptar o rechazar)
+	 * @param saleNumber número de la venta
+	 * @param acceptedOfferId id de la oferta aceptada
+	 * @param criterio criterio de decisión (ACEPTAR o RECHAZAR)
+	 * @param motivo motivo de la decisión
+	 * @return DecisionVenta con el resultado de la decisión
+	 */
+    @WebMethod
+    public DecisionVenta decidirComprador(Integer saleNumber, Integer acceptedOfferId,
+                                          CriterioDecision criterio, String motivo);
+    
+    /** 
+     * Procesa el cobro de una venta aceptada, creando una transacción de pago y calculando la comisión del marketplace.
+     * @param saleNumber número de la venta
+     * @param buyerEmail email del comprador
+     * @param importe monto a cobrar
+     * @return TransaccionPago con los detalles del cobro realizado
+     * @throws InvalidPriceException si el importe es inválido
+     */
+    @WebMethod
+    public TransaccionPago procesarCobro(Integer saleNumber, String buyerEmail, float importe)
+        throws InvalidPriceException;
+
+    /**
+	 * Calcula la comisión del marketplace para una transacción de pago dada.
+	 * @param transaccionPagoId id de la transacción de pago
+	 * @param porcentaje porcentaje de comisión a aplicar
+	 * @return ComisionMarketplace con los detalles de la comisión calculada
+	 */
+    @WebMethod
+    public ComisionMarketplace calcularComision(Integer transaccionPagoId, float porcentaje);
+
+    /**
+     * Solicita un reembolso para una transacción de pago, especificando el tipo de reembolso (total o parcial) y el motivo.
+     * @param transaccionPagoId id de la transacción de pago para la cual se solicita el reembolso
+     * @param importe monto a reembolsar (debe ser menor o igual al importe de la transacción)
+     * @param tipo tipo de reembolso (TOTAL o PARCIAL)
+     * @param motivo motivo del reembolso
+     * @return Reembolso con los detalles del reembolso solicitado
+     */
+    @WebMethod
+    public Reembolso solicitarReembolso(Integer transaccionPagoId, float importe,
+                                        TipoReembolso tipo, String motivo);
+    /**
+	 * Obtiene las decisiones de venta tomadas por un vendedor, incluyendo el criterio de decisión y el motivo.
+	 * @param sellerEmail email del vendedor
+	 * @return Lista de DecisionVenta con las decisiones tomadas por el vendedor
+	 */
+    @WebMethod
+    public List<DecisionVenta> getDecisionVentasBySeller(String sellerEmail);
+
+    /**
+	 * Obtiene las comisiones del marketplace de un vendedor.
+	 * @param sellerEmail email del vendedor
+	 * @return Lista de comisiones asociadas al vendedor
+	 */
+    @WebMethod
+    public List<ComisionMarketplace> getComisionesBySeller(String sellerEmail);
+
+    /**
+	 * Obtiene los reembolsos solicitados por un comprador, incluyendo el tipo de
+	 * reembolso y el motivo.
+	 * @param buyerEmail email del comprador
+	 * @return Lista de Reembolso con los reembolsos solicitados por el comprador
+	 */
+    @WebMethod
+    public List<Reembolso> getReembolsosByBuyer(String buyerEmail);
 }

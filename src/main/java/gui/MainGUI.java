@@ -34,6 +34,7 @@ public class MainGUI extends JFrame {
 	private JButton jButtonQueryQueries = null;
 	private JButton jButtonLogout = null;
 	private JButton jButtonViewMyOffers = null;
+	private final ResourceBundle labels = ResourceBundle.getBundle("Etiquetas");
 
     private static BLFacade appFacadeInterface;
 	
@@ -55,13 +56,13 @@ public class MainGUI extends JFrame {
 		this.sellerMail=mail;
 		
 		this.setSize(560, 400);
-		jLabelSelectOption = new JLabel(ResourceBundle.getBundle("Etiquetas").getString("MainGUI.SelectOption"));
+		jLabelSelectOption = new JLabel(labels.getString("MainGUI.SelectOption"));
 		jLabelSelectOption.setFont(new Font("Segoe UI", Font.BOLD, 14));
 		jLabelSelectOption.setForeground(Color.BLACK);
 		jLabelSelectOption.setHorizontalAlignment(SwingConstants.CENTER);
 		
 		jButtonCreateQuery = new JButton();
-		jButtonCreateQuery.setText(ResourceBundle.getBundle("Etiquetas").getString("MainGUI.CreateSale"));
+		jButtonCreateQuery.setText(labels.getString("MainGUI.CreateSale"));
 		jButtonCreateQuery.setFont(new Font("Segoe UI", Font.PLAIN, 14));
 		jButtonCreateQuery.addActionListener(new java.awt.event.ActionListener() {
 			public void actionPerformed(java.awt.event.ActionEvent e) {
@@ -71,7 +72,7 @@ public class MainGUI extends JFrame {
 		});
 		
 		jButtonQueryQueries = new JButton();
-		jButtonQueryQueries.setText(ResourceBundle.getBundle("Etiquetas").getString("MainGUI.ViewAvailable"));
+		jButtonQueryQueries.setText(labels.getString("MainGUI.ViewAvailable"));
 		jButtonQueryQueries.setFont(new Font("Segoe UI", Font.PLAIN, 14));
 		jButtonQueryQueries.addActionListener(new java.awt.event.ActionListener() {
 			public void actionPerformed(java.awt.event.ActionEvent e) {
@@ -81,7 +82,7 @@ public class MainGUI extends JFrame {
 		});
 
 		jButtonViewMyOffers = new JButton();
-		jButtonViewMyOffers.setText(ResourceBundle.getBundle("Etiquetas").getString("MainGUI.ViewMyOffers"));
+		jButtonViewMyOffers.setText(labels.getString("MainGUI.ViewMyOffers"));
 		jButtonViewMyOffers.setFont(new Font("Segoe UI", Font.PLAIN, 14));
 		jButtonViewMyOffers.addActionListener(new java.awt.event.ActionListener() {
 			public void actionPerformed(java.awt.event.ActionEvent e) {
@@ -91,7 +92,7 @@ public class MainGUI extends JFrame {
 		});
 		
 		jButtonLogout = new JButton();
-		jButtonLogout.setText(ResourceBundle.getBundle("Etiquetas").getString("MainGUI.Logout"));
+		jButtonLogout.setText(labels.getString("MainGUI.Logout"));
 		jButtonLogout.setFont(new Font("Segoe UI", Font.PLAIN, 14));
 		jButtonLogout.addActionListener(new java.awt.event.ActionListener() {
 			public void actionPerformed(java.awt.event.ActionEvent e) {
@@ -112,7 +113,7 @@ public class MainGUI extends JFrame {
 		
 		
 		setContentPane(jContentPane);
-		setTitle(ResourceBundle.getBundle("Etiquetas").getString("MainGUI.MainTitle") +": "+sellerMail);
+		setTitle(labels.getString("MainGUI.MainTitle") +": "+sellerMail);
 		
 		addWindowListener(new WindowAdapter() {
 			@Override
@@ -123,11 +124,12 @@ public class MainGUI extends JFrame {
 	}
 	
 	private void paintAgain() {
-		jLabelSelectOption.setText(ResourceBundle.getBundle("Etiquetas").getString("MainGUI.SelectOption"));
-		jButtonQueryQueries.setText(ResourceBundle.getBundle("Etiquetas").getString("MainGUI.ViewAvailable"));
-		jButtonCreateQuery.setText(ResourceBundle.getBundle("Etiquetas").getString("MainGUI.CreateSale"));
-		jButtonLogout.setText(ResourceBundle.getBundle("Etiquetas").getString("MainGUI.Logout"));
-		this.setTitle(ResourceBundle.getBundle("Etiquetas").getString("MainGUI.MainTitle")+ ": "+sellerMail);
+		ResourceBundle l = ResourceBundle.getBundle("Etiquetas");
+		jLabelSelectOption.setText(l.getString("MainGUI.SelectOption"));
+		jButtonQueryQueries.setText(l.getString("MainGUI.ViewAvailable"));
+		jButtonCreateQuery.setText(l.getString("MainGUI.CreateSale"));
+		jButtonLogout.setText(l.getString("MainGUI.Logout"));
+		this.setTitle(l.getString("MainGUI.MainTitle")+ ": "+sellerMail);
 	}
 	
 } // @jve:decl-index=0:visual-constraint="0,0"

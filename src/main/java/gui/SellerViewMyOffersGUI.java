@@ -84,23 +84,25 @@ public class SellerViewMyOffersGUI extends JFrame {
     
     private void loadMyOffers() {
         tableModel.setRowCount(0);
-        
+
         BLFacade facade = MainGUI.getBusinessLogic();
-        
         List<Sale> mySales = facade.getSalesBySellerEmail(sellerEmail);
-        
+        List<AcceptedOffer> acceptances = facade.getAcceptedOffersBySeller(sellerEmail);
+
+        java.util.Map<Integer, AcceptedOffer> acceptedBySale = new java.util.HashMap<>();
+        for (AcceptedOffer offer : acceptances) {
+            acceptedBySale.put(offer.getSale().getSaleNumber(), offer);
+        }
+
         for (Sale sale : mySales) {
-            List<AcceptedOffer> acceptances = 
-                facade.getAcceptedOffersBySeller(sellerEmail);
-            
-            AcceptedOffer accepted = acceptances.stream().filter(a -> a.getSale().getSaleNumber().equals(sale.getSaleNumber())).findFirst().orElse(null);
-            
+            AcceptedOffer accepted = acceptedBySale.get(sale.getSaleNumber());
+
             if (accepted != null) {
                 tableModel.addRow(new Object[]{
                     sale.getSaleNumber(),
                     sale.getTitle(),
                     "€" + sale.getPrice(),
-                    "✓",
+                    "SI",
                     accepted.getBuyer().getName(),
                     "€" + accepted.getFinalPrice(),
                     dateFormat.format(accepted.getAcceptanceDate())
@@ -110,7 +112,7 @@ public class SellerViewMyOffersGUI extends JFrame {
                     sale.getSaleNumber(),
                     sale.getTitle(),
                     "€" + sale.getPrice(),
-                    "✗",
+                    "NO",
                     "-",
                     "-",
                     "-"
