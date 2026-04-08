@@ -67,7 +67,7 @@ public class CreateSaleGUI extends JFrame {
 	private JLabel jLabelMsg = new JLabel();
 	private JLabel jLabelError = new JLabel();
 	private JFrame thisFrame;
-	private final JButton btnNewButton_2 = new JButton("grabar Imagen"); //$NON-NLS-1$ //$NON-NLS-2$
+	private final JButton btnNewButton_2 = new JButton(ResourceBundle.getBundle("Etiquetas").getString("CreateSaleGUI.SavePicture"));
 
 	public CreateSaleGUI(String mail) {
 

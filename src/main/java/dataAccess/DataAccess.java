@@ -598,7 +598,7 @@ public class DataAccess  {
 	 * Registra la decisión de venta de un comprador
 	 */
     public DecisionVenta decidirComprador(Integer saleNumber, Integer acceptedOfferId,
-            CriterioDecision criterio, String motivo) {
+            String criterio, String motivo) {
     	try {
     		db.getTransaction().begin();
     		
@@ -610,7 +610,12 @@ public class DataAccess  {
     			return null;	
     		}
     		
-    		DecisionVenta decision = new DecisionVenta(sale,acceptedOffer.getBuyer(),sale.getSeller(),criterio,motivo);
+			DecisionVenta decision = new DecisionVenta(
+				sale,
+				acceptedOffer,
+				sale.getSeller().getEmail(),
+				criterio,
+				motivo);
     		
     		db.persist(decision);
     		db.getTransaction().commit();
@@ -627,11 +632,10 @@ public class DataAccess  {
     /**
      * Registra el cobro de una venta aceptada
      */
-    public TransaccionPago procesarCobro(Integer saleNumber, String buyerEmail, float importe)
-            throws InvalidPriceException {
+	public TransaccionPago procesarCobro(Integer saleNumber, String buyerEmail, float importe) {
         try {
             if (importe <= 0) {
-				throw new InvalidPriceException(msg("DataAccess.ErrorAmountMustBePositive"));
+				return null;
             }
 
             db.getTransaction().begin();
@@ -644,18 +648,13 @@ public class DataAccess  {
                 return null;
             }
 
-            TransaccionPago transaccion = new TransaccionPago(sale, buyer, importe);
-            transaccion.setEstado(EstadoPago.CONFIRMADO);
-            transaccion.setReferenciaPasarela("SIM-" + System.currentTimeMillis());
+			TransaccionPago transaccion = new TransaccionPago(saleNumber, buyerEmail, importe);
+			transaccion.setEstado(TransaccionPago.EstadoPago.CONFIRMADO);
+			transaccion.setReferenciaExterna("REF-" + System.currentTimeMillis());
 
             db.persist(transaccion);
             db.getTransaction().commit();
             return transaccion;
-        } catch (InvalidPriceException e) {
-            if (db.getTransaction().isActive()) {
-                db.getTransaction().rollback();
-            }
-            throw e;
         } catch (Exception e) {
             if (db.getTransaction().isActive()) {
                 db.getTransaction().rollback();
@@ -664,28 +663,42 @@ public class DataAccess  {
             return null;
         }
     }
+
+	public List<TransaccionPago> getTransaccionesBySale(Integer saleNumber) {
+		try {
+			TypedQuery<TransaccionPago> query = db.createQuery(
+				"SELECT t FROM TransaccionPago t WHERE t.saleNumber = :saleNumber",
+				TransaccionPago.class);
+			query.setParameter("saleNumber", saleNumber);
+			return query.getResultList();
+		} catch (Exception e) {
+			e.printStackTrace();
+			return new ArrayList<>();
+		}
+	}
+
     /**
 	 * Calcula la comisión del marketplace para una transacción de pago dada.
 	 */
     public ComisionMarketplace calcularComision(Integer transaccionPagoId, float porcentaje) {
         try {
-            db.getTransaction().begin();
-
             TransaccionPago transaccion = db.find(TransaccionPago.class, transaccionPagoId);
-            if (transaccion == null || transaccion.getEstado() != EstadoPago.CONFIRMADO) {
-                db.getTransaction().rollback();
+			if (transaccion == null ||
+				!transaccion.getEstado().equals(TransaccionPago.EstadoPago.CONFIRMADO)) {
                 return null;
             }
 
-            ComisionMarketplace comision = new ComisionMarketplace(transaccion, transaccion.getSale().getSeller(), porcentaje);
-            db.persist(comision);
+			Sale sale = db.find(Sale.class, transaccion.getSaleNumber());
+			if (sale == null) return null;
 
-            db.getTransaction().commit();
+			ComisionMarketplace comision = new ComisionMarketplace(
+				transaccionPagoId,
+				sale.getSeller().getEmail(),
+				transaccion.getImporte(),
+				porcentaje);
+            db.persist(comision);
             return comision;
         } catch (Exception e) {
-            if (db.getTransaction().isActive()) {
-                db.getTransaction().rollback();
-            }
             e.printStackTrace();
             return null;
         }
@@ -695,33 +708,20 @@ public class DataAccess  {
      * Registra una solicitud de reembolso para una transacción de pago dada, con validaciones para el importe y tipo de reembolso.
      */
     public Reembolso solicitarReembolso(Integer transaccionPagoId, float importe,
-            TipoReembolso tipo, String motivo) {
-    	try {
-    		db.getTransaction().begin();
-    		
-    		TransaccionPago transaccion = db.find(TransaccionPago.class, transaccionPagoId);
-    		if (transaccion == null) {
-    			db.getTransaction().rollback();
-    			return null;
-    		}
-    		
-    		float importeValido = tipo == TipoReembolso.TOTAL ? transaccion.getImporte() : importe;
-    		if (tipo == TipoReembolso.PARCIAL && importe > transaccion.getImporte()) {
-    			db.getTransaction().rollback();
-    			return null;	
-    		}
-			
-			Reembolso reembolso = new Reembolso(transaccion, importeValido, tipo, motivo);
-			reembolso.setEstado(EstadoReembolso.APROBADO);
-			reembolso.setFechaResolucion(new Date());
-			
+                                   String motivo, String buyerEmail) {
+		try {
+			TransaccionPago transaccion = db.find(TransaccionPago.class, transaccionPagoId);
+			if (transaccion == null) return null;
+
+			Reembolso.TipoReembolso tipo = (importe >= transaccion.getImporte())
+					? Reembolso.TipoReembolso.TOTAL
+					: Reembolso.TipoReembolso.PARCIAL;
+
+			Reembolso reembolso = new Reembolso(transaccionPagoId, buyerEmail,
+											   tipo, importe, motivo);
 			db.persist(reembolso);
-			db.getTransaction().commit();
 			return reembolso;
 		} catch (Exception e) {
-			if (db.getTransaction().isActive()) {
-				db.getTransaction().rollback();
-			}
 			e.printStackTrace();
 			return null;
 		}
@@ -734,7 +734,7 @@ public class DataAccess  {
 	 */
     public List<DecisionVenta> getDecisionVentasBySeller(String sellerEmail) {
         TypedQuery<DecisionVenta> query = db.createQuery(
-            "SELECT d FROM DecisionVenta d WHERE d.seller.email = :email",
+			"SELECT d FROM DecisionVenta d WHERE d.sellerEmail = :email",
             DecisionVenta.class);
         query.setParameter("email", sellerEmail);
         return query.getResultList();
@@ -746,11 +746,16 @@ public class DataAccess  {
 	 * @return una lista de objetos ComisionMarketplace asociados al vendedor, o una lista vacía si no se encuentran registros
 	 */
     public List<ComisionMarketplace> getComisionesBySeller(String sellerEmail) {
-        TypedQuery<ComisionMarketplace> query = db.createQuery(
-            "SELECT c FROM ComisionMarketplace c WHERE c.seller.email = :email",
-            ComisionMarketplace.class);
-        query.setParameter("email", sellerEmail);
-        return query.getResultList();
+		try {
+			TypedQuery<ComisionMarketplace> query = db.createQuery(
+				"SELECT c FROM ComisionMarketplace c WHERE c.sellerEmail = :email",
+				ComisionMarketplace.class);
+			query.setParameter("email", sellerEmail);
+			return query.getResultList();
+		} catch (Exception e) {
+			e.printStackTrace();
+			return new ArrayList<>();
+		}
     }
 
 	/**
@@ -759,11 +764,16 @@ public class DataAccess  {
 	 * @return una lista de objetos Reembolso asociados al comprador, o una lista vacía si no se encuentran registros
 	 */
     public List<Reembolso> getReembolsosByBuyer(String buyerEmail) {
-        TypedQuery<Reembolso> query = db.createQuery(
-            "SELECT r FROM Reembolso r WHERE r.transaccionPago.buyer.email = :email",
-            Reembolso.class);
-        query.setParameter("email", buyerEmail);
-        return query.getResultList();
+		try {
+			TypedQuery<Reembolso> query = db.createQuery(
+				"SELECT r FROM Reembolso r WHERE r.buyerEmail = :email",
+				Reembolso.class);
+			query.setParameter("email", buyerEmail);
+			return query.getResultList();
+		} catch (Exception e) {
+			e.printStackTrace();
+			return new ArrayList<>();
+		}
     }
 
 	/**

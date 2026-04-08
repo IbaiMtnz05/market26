@@ -11,12 +11,10 @@ import javax.jws.WebService;
 import domain.AcceptedOffer;
 import domain.Buyer;
 import domain.ComisionMarketplace;
-import domain.CriterioDecision;
 import domain.DecisionVenta;
 import domain.Reembolso;
 import domain.Sale;
 import domain.Seller;
-import domain.TipoReembolso;
 import domain.TransaccionPago;
 import domain.User;
 import exceptions.FileNotUploadedException;
@@ -158,50 +156,51 @@ public interface BLFacade  {
     @WebMethod
     public List<Sale> getSalesBySellerEmail(String sellerEmail);
 
-    /**
-	 * Decide sobre una venta aceptada (aceptar o rechazar)
-	 * @param saleNumber número de la venta
-	 * @param acceptedOfferId id de la oferta aceptada
-	 * @param criterio criterio de decisión (ACEPTAR o RECHAZAR)
-	 * @param motivo motivo de la decisión
-	 * @return DecisionVenta con el resultado de la decisión
+	/**
+	 * Registra la decision del vendedor sobre que comprador sera seleccionado.
+	 * @param saleNumber numero de venta
+	 * @param acceptedOfferId id de la propuesta aceptada
+	 * @param criterio criterio de seleccion (mejor precio, mejor valoracion, etc.)
+	 * @param motivo justificacion de la decision
+	 * @return DecisionVenta registrada
 	 */
     @WebMethod
     public DecisionVenta decidirComprador(Integer saleNumber, Integer acceptedOfferId,
-                                          CriterioDecision criterio, String motivo);
+                                          String criterio, String motivo);
     
-    /** 
-     * Procesa el cobro de una venta aceptada, creando una transacción de pago y calculando la comisión del marketplace.
-     * @param saleNumber número de la venta
-     * @param buyerEmail email del comprador
-     * @param importe monto a cobrar
-     * @return TransaccionPago con los detalles del cobro realizado
-     * @throws InvalidPriceException si el importe es inválido
-     */
+	/**
+	 * Procesa el cobro transaccional del precio del producto al comprador.
+	 * @param saleNumber numero de venta
+	 * @param buyerEmail email del comprador
+	 * @param importe importe a cobrar
+	 * @return TransaccionPago registrada
+	 */
     @WebMethod
-    public TransaccionPago procesarCobro(Integer saleNumber, String buyerEmail, float importe)
-        throws InvalidPriceException;
+	public TransaccionPago procesarCobro(Integer saleNumber, String buyerEmail, float importe);
 
-    /**
-	 * Calcula la comisión del marketplace para una transacción de pago dada.
-	 * @param transaccionPagoId id de la transacción de pago
-	 * @param porcentaje porcentaje de comisión a aplicar
-	 * @return ComisionMarketplace con los detalles de la comisión calculada
+	@WebMethod
+	public List<TransaccionPago> getTransaccionesBySale(Integer saleNumber);
+
+	/**
+	 * Calcula la comision del marketplace sobre una transaccion de pago confirmada.
+	 * @param transaccionPagoId id de la transaccion
+	 * @param porcentaje porcentaje de comision a aplicar
+	 * @return ComisionMarketplace calculada
 	 */
     @WebMethod
     public ComisionMarketplace calcularComision(Integer transaccionPagoId, float porcentaje);
 
-    /**
-     * Solicita un reembolso para una transacción de pago, especificando el tipo de reembolso (total o parcial) y el motivo.
-     * @param transaccionPagoId id de la transacción de pago para la cual se solicita el reembolso
-     * @param importe monto a reembolsar (debe ser menor o igual al importe de la transacción)
-     * @param tipo tipo de reembolso (TOTAL o PARCIAL)
-     * @param motivo motivo del reembolso
-     * @return Reembolso con los detalles del reembolso solicitado
-     */
+	/**
+	 * Solicita un reembolso total o parcial al comprador por incidencia post-venta.
+	 * @param transaccionPagoId id de la transaccion original
+	 * @param importe importe a devolver
+	 * @param motivo motivo del reembolso (producto defectuoso, cancelacion acordada, etc.)
+	 * @param buyerEmail email del comprador
+	 * @return Reembolso registrado
+	 */
     @WebMethod
     public Reembolso solicitarReembolso(Integer transaccionPagoId, float importe,
-                                        TipoReembolso tipo, String motivo);
+										String motivo, String buyerEmail);
     /**
 	 * Obtiene las decisiones de venta tomadas por un vendedor, incluyendo el criterio de decisión y el motivo.
 	 * @param sellerEmail email del vendedor

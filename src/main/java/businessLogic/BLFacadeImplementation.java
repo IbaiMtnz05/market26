@@ -14,12 +14,10 @@ import dataAccess.DataAccess;
 import domain.AcceptedOffer;
 import domain.Buyer;
 import domain.ComisionMarketplace;
-import domain.CriterioDecision;
 import domain.DecisionVenta;
 import domain.Reembolso;
 import domain.Sale;
 import domain.Seller;
-import domain.TipoReembolso;
 import domain.TransaccionPago;
 import domain.User;
 import exceptions.FileNotUploadedException;
@@ -235,27 +233,22 @@ public class BLFacadeImplementation  implements BLFacade {
 	 */
     @WebMethod
     public DecisionVenta decidirComprador(Integer saleNumber, Integer acceptedOfferId,
-                                          CriterioDecision criterio, String motivo) {
-        dbManager.open();
-        try {
-            return dbManager.decidirComprador(saleNumber, acceptedOfferId, criterio, motivo);
-        } finally {
-            dbManager.close();
-        }
+										  String criterio, String motivo) {
+		return execute(() -> dbManager.decidirComprador(saleNumber, acceptedOfferId,
+													 criterio, motivo));
     }
    
     /**
 	 * {@inheritDoc}
 	 */
     @WebMethod
-    public TransaccionPago procesarCobro(Integer saleNumber, String buyerEmail, float importe)
-            throws InvalidPriceException {
-        dbManager.open();
-        try {
-            return dbManager.procesarCobro(saleNumber, buyerEmail, importe);
-        } finally {
-            dbManager.close();
-        }
+	public TransaccionPago procesarCobro(Integer saleNumber, String buyerEmail, float importe) {
+		return execute(() -> dbManager.procesarCobro(saleNumber, buyerEmail, importe));
+	}
+
+	@WebMethod
+	public List<TransaccionPago> getTransaccionesBySale(Integer saleNumber) {
+		return execute(() -> dbManager.getTransaccionesBySale(saleNumber));
     }
     
     /**
@@ -263,12 +256,7 @@ public class BLFacadeImplementation  implements BLFacade {
      */
     @WebMethod
     public ComisionMarketplace calcularComision(Integer transaccionPagoId, float porcentaje) {
-        dbManager.open();
-        try {
-            return dbManager.calcularComision(transaccionPagoId, porcentaje);
-        } finally {
-            dbManager.close();
-        }
+		return execute(() -> dbManager.calcularComision(transaccionPagoId, porcentaje));
     }
     
     /**
@@ -276,13 +264,9 @@ public class BLFacadeImplementation  implements BLFacade {
 	 */
     @WebMethod
     public Reembolso solicitarReembolso(Integer transaccionPagoId, float importe,
-                                        TipoReembolso tipo, String motivo) {
-        dbManager.open();
-        try {
-            return dbManager.solicitarReembolso(transaccionPagoId, importe, tipo, motivo);
-        } finally {
-            dbManager.close();
-        }
+										String motivo, String buyerEmail) {
+		return execute(() -> dbManager.solicitarReembolso(transaccionPagoId, importe,
+													  motivo, buyerEmail));
     }
     
     /**
@@ -290,12 +274,7 @@ public class BLFacadeImplementation  implements BLFacade {
 	 */
     @WebMethod
     public List<DecisionVenta> getDecisionVentasBySeller(String sellerEmail) {
-        dbManager.open();
-        try {
-            return dbManager.getDecisionVentasBySeller(sellerEmail);
-        } finally {
-            dbManager.close();
-        }
+		return execute(() -> dbManager.getDecisionVentasBySeller(sellerEmail));
     }
     
     /**
@@ -303,12 +282,7 @@ public class BLFacadeImplementation  implements BLFacade {
      */
     @WebMethod
     public List<ComisionMarketplace> getComisionesBySeller(String sellerEmail) {
-        dbManager.open();
-        try {
-            return dbManager.getComisionesBySeller(sellerEmail);
-        } finally {
-            dbManager.close();
-        }
+		return execute(() -> dbManager.getComisionesBySeller(sellerEmail));
     }
     
     /**
@@ -316,12 +290,7 @@ public class BLFacadeImplementation  implements BLFacade {
      */
     @WebMethod
     public List<Reembolso> getReembolsosByBuyer(String buyerEmail) {
-        dbManager.open();
-        try {
-            return dbManager.getReembolsosByBuyer(buyerEmail);
-        } finally {
-            dbManager.close();
-        }
+		return execute(() -> dbManager.getReembolsosByBuyer(buyerEmail));
     }
 }
 

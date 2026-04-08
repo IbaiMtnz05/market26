@@ -4,49 +4,65 @@ import java.io.Serializable;
 import java.util.Date;
 
 import javax.persistence.Entity;
-import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
-import javax.persistence.ManyToOne;
 
 @Entity
 public class Reembolso implements Serializable {
     private static final long serialVersionUID = 1L;
 
+    public enum TipoReembolso { TOTAL, PARCIAL }
+
     @Id
     @GeneratedValue
     private Integer id;
 
-    @ManyToOne(fetch = FetchType.EAGER)
-    private TransaccionPago transaccionPago;
-
-    private float importe;
+    private Integer transaccionPagoId;
+    private String buyerEmail;
     private TipoReembolso tipo;
+    private float importe;
     private String motivo;
-    private EstadoReembolso estado;
+    private String estado;
+    private String detalleEstado;
     private Date fechaSolicitud;
-    private Date fechaResolucion;
 
     public Reembolso() {
     }
 
-    public Reembolso(TransaccionPago transaccionPago, float importe, TipoReembolso tipo, String motivo) {
-        this.transaccionPago = transaccionPago;
-        this.importe = importe;
+    public Reembolso(Integer transaccionPagoId, String buyerEmail, TipoReembolso tipo, float importe, String motivo) {
+        this.transaccionPagoId = transaccionPagoId;
+        this.buyerEmail = buyerEmail;
         this.tipo = tipo;
+        this.importe = importe;
         this.motivo = motivo;
-        this.estado = EstadoReembolso.PENDIENTE;
         this.fechaSolicitud = new Date();
+        this.estado = "EstadoReembolso.PENDIENTE";
     }
 
     public Integer getId() { return id; }
-    public TransaccionPago getTransaccionPago() { return transaccionPago; }
-    public float getImporte() { return importe; }
+    public void setId(Integer id) { this.id = id; }
+
+    public Integer getTransaccionPagoId() { return transaccionPagoId; }
+    public void setTransaccionPagoId(Integer transaccionPagoId) { this.transaccionPagoId = transaccionPagoId; }
+
+    public String getBuyerEmail() { return buyerEmail; }
+    public void setBuyerEmail(String buyerEmail) { this.buyerEmail = buyerEmail; }
+
     public TipoReembolso getTipo() { return tipo; }
+    public void setTipo(TipoReembolso tipo) { this.tipo = tipo; }
+
+    public float getImporte() { return importe; }
+    public void setImporte(float importe) { this.importe = importe; }
+
     public String getMotivo() { return motivo; }
-    public EstadoReembolso getEstado() { return estado; }
-    public void setEstado(EstadoReembolso estado) { this.estado = estado; }
+    public void setMotivo(String motivo) { this.motivo = motivo; }
+
     public Date getFechaSolicitud() { return fechaSolicitud; }
-    public Date getFechaResolucion() { return fechaResolucion; }
-    public void setFechaResolucion(Date fechaResolucion) { this.fechaResolucion = fechaResolucion; }
+    public void setFechaSolicitud(Date fechaSolicitud) { this.fechaSolicitud = fechaSolicitud; }
+
+    public String getEstado() { return estado; }
+    public void setEstado(String estado) { this.estado = estado; }
+
+    public String getDetalleEstado() { return detalleEstado; }
+    public void setDetalleEstado(String detalleEstado) { this.detalleEstado = detalleEstado; }
 }

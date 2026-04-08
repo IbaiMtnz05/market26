@@ -177,8 +177,8 @@ public class AcceptOfferGUI extends JFrame {
                 labels.getString("AcceptOfferGUI.AcceptError"), 
                 JOptionPane.ERROR_MESSAGE);
         } catch (Exception e) {
-            JOptionPane.showMessageDialog(this, 
-                "Error al aceptar oferta: " + e.getMessage(), 
+            JOptionPane.showMessageDialog(this,
+                labels.getString("AcceptOfferGUI.UnexpectedErrorPrefix") + e.getMessage(),
                 labels.getString("AcceptOfferGUI.AcceptError"), JOptionPane.ERROR_MESSAGE);
         }
     }
