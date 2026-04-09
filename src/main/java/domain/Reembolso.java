@@ -25,18 +25,26 @@ public class Reembolso implements Serializable {
     private String estado;
     private String detalleEstado;
     private Date fechaSolicitud;
+    private String vendedorEmail;      
+    private String observaciones;      
+    private Date fechaResolucion;      
+    private String estadoResolucion;   
 
     public Reembolso() {
     }
 
-    public Reembolso(Integer transaccionPagoId, String buyerEmail, TipoReembolso tipo, float importe, String motivo) {
-        this.transaccionPagoId = transaccionPagoId;
-        this.buyerEmail = buyerEmail;
-        this.tipo = tipo;
-        this.importe = importe;
-        this.motivo = motivo;
-        this.fechaSolicitud = new Date();
-        this.estado = "EstadoReembolso.PENDIENTE";
+    public Reembolso(Integer transaccionPagoId, String buyerEmail, String vendedorEmail,
+            TipoReembolso tipo, float importe, String motivo, String observaciones) {
+    		this.transaccionPagoId = transaccionPagoId;
+    		this.buyerEmail = buyerEmail;
+    		this.vendedorEmail = vendedorEmail;
+    		this.tipo = tipo;
+    		this.importe = importe;
+    		this.motivo = motivo;
+    		this.observaciones = observaciones;
+    		this.fechaSolicitud = new Date();
+    		this.estado = "PENDIENTE";
+    		this.estadoResolucion = "PENDIENTE";
     }
 
     public Integer getId() { return id; }
@@ -65,4 +73,16 @@ public class Reembolso implements Serializable {
 
     public String getDetalleEstado() { return detalleEstado; }
     public void setDetalleEstado(String detalleEstado) { this.detalleEstado = detalleEstado; }
+    
+    public String getVendedorEmail() { return vendedorEmail; }
+    public void setVendedorEmail(String vendedorEmail) { this.vendedorEmail = vendedorEmail; }
+    
+    public String getObservaciones() { return observaciones; }
+    public void setObservaciones(String observaciones) { this.observaciones = observaciones; }
+    
+    public Date getFechaResolucion() { return fechaResolucion; }
+    public void setFechaResolucion(Date fechaResolucion) { this.fechaResolucion = fechaResolucion; }
+    
+    public String getEstadoResolucion() { return estadoResolucion; }
+    public void setEstadoResolucion(String estadoResolucion) { this.estadoResolucion = estadoResolucion;} 
 }

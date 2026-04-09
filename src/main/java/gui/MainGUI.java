@@ -32,6 +32,7 @@ public class MainGUI extends JFrame {
 	private JPanel jContentPane = null;
 	private JButton jButtonCreateQuery = null;
 	private JButton jButtonQueryQueries = null;
+	private JButton jButtonViewCommissions = null;
 	private JButton jButtonLogout = null;
 	private JButton jButtonViewMyOffers = null;
 	private final ResourceBundle labels = ResourceBundle.getBundle("Etiquetas");
@@ -55,7 +56,7 @@ public class MainGUI extends JFrame {
 
 		this.sellerMail=mail;
 		
-		this.setSize(560, 400);
+		this.setSize(560, 460);
 		jLabelSelectOption = new JLabel(labels.getString("MainGUI.SelectOption"));
 		jLabelSelectOption.setFont(new Font("Segoe UI", Font.BOLD, 14));
 		jLabelSelectOption.setForeground(Color.BLACK);
@@ -90,6 +91,16 @@ public class MainGUI extends JFrame {
 				sellerViewGUI.setVisible(true);
 			}
 		});
+
+		jButtonViewCommissions = new JButton();
+		jButtonViewCommissions.setText(labels.getString("MainGUI.ViewCommissions"));
+		jButtonViewCommissions.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+		jButtonViewCommissions.addActionListener(new java.awt.event.ActionListener() {
+			public void actionPerformed(java.awt.event.ActionEvent e) {
+				JFrame commissionsGUI = new SellerCommissionsGUI(sellerMail);
+				commissionsGUI.setVisible(true);
+			}
+		});
 		
 		jButtonLogout = new JButton();
 		jButtonLogout.setText(labels.getString("MainGUI.Logout"));
@@ -104,11 +115,12 @@ public class MainGUI extends JFrame {
 
 		jContentPane = new JPanel();
 		jContentPane.setBackground(new Color(245, 247, 250));
-		jContentPane.setLayout(new GridLayout(5, 1, 0, 10));
+		jContentPane.setLayout(new GridLayout(6, 1, 0, 10));
 		jContentPane.add(jLabelSelectOption);
 		jContentPane.add(jButtonCreateQuery);
 		jContentPane.add(jButtonQueryQueries);
 		jContentPane.add(jButtonViewMyOffers); 
+		jContentPane.add(jButtonViewCommissions);
 		jContentPane.add(jButtonLogout);
 		
 		
@@ -128,6 +140,7 @@ public class MainGUI extends JFrame {
 		jLabelSelectOption.setText(l.getString("MainGUI.SelectOption"));
 		jButtonQueryQueries.setText(l.getString("MainGUI.ViewAvailable"));
 		jButtonCreateQuery.setText(l.getString("MainGUI.CreateSale"));
+		jButtonViewCommissions.setText(l.getString("MainGUI.ViewCommissions"));
 		jButtonLogout.setText(l.getString("MainGUI.Logout"));
 		this.setTitle(l.getString("MainGUI.MainTitle")+ ": "+sellerMail);
 	}

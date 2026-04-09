@@ -4,6 +4,8 @@ import java.io.Serializable;
 import java.util.Date;
 
 import javax.persistence.Entity;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
 import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
@@ -17,6 +19,8 @@ import javax.persistence.ManyToOne;
 @Entity
 public class AcceptedOffer implements Serializable {
     private static final long serialVersionUID = 1L;
+
+    public enum EstadoOferta { PENDIENTE, ACEPTADA, RECHAZADA }
     
     @Id
     @GeneratedValue
@@ -33,6 +37,8 @@ public class AcceptedOffer implements Serializable {
     private Date acceptanceDate;
 
     private Float negotiatedPrice;
+    @Enumerated(EnumType.STRING)
+    private EstadoOferta estado;
     
     /**
      * Default constructor for JPA.
@@ -51,6 +57,7 @@ public class AcceptedOffer implements Serializable {
         this.sale = sale;
         this.negotiatedPrice = negotiatedPrice;
         this.acceptanceDate = new Date();
+        this.estado = EstadoOferta.PENDIENTE;
     }
     
     // Getters y setters
@@ -69,6 +76,9 @@ public class AcceptedOffer implements Serializable {
 
     public Float getNegotiatedPrice() { return negotiatedPrice; }
     public void setNegotiatedPrice(Float price) { this.negotiatedPrice = price; }
+
+    public EstadoOferta getEstado() { return estado; }
+    public void setEstado(EstadoOferta estado) { this.estado = estado; }
     
     /**
      * Gets the final price for this accepted offer.
@@ -77,6 +87,9 @@ public class AcceptedOffer implements Serializable {
      * @return the final price
      */
     public Float getFinalPrice() {
-        return negotiatedPrice != null ? negotiatedPrice : sale.getPrice();
+        if (negotiatedPrice != null) {
+            return negotiatedPrice;
+        }
+        return sale.getPrice();
     }
 }

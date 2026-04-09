@@ -55,6 +55,7 @@ public class ViewAcceptedOffersGUI extends JFrame {
         
         String[] columns = {labels.getString("ViewAcceptedOffersGUI.ColumnOffer"), 
                            labels.getString("ViewAcceptedOffersGUI.ColumnPrice"), 
+                           labels.getString("ViewAcceptedOffersGUI.ColumnStatus"),
                            labels.getString("ViewAcceptedOffersGUI.ColumnBuyer"), 
                            labels.getString("ViewAcceptedOffersGUI.ColumnBuyerEmail"), 
                            labels.getString("ViewAcceptedOffersGUI.ColumnAcceptDate")};
@@ -94,7 +95,8 @@ public class ViewAcceptedOffersGUI extends JFrame {
         for (AcceptedOffer offer : accepted) {
             Object[] row = {
                 offer.getSale().getTitle(),
-                String.format("%.2f€", offer.getSale().getPrice()),
+                String.format("%.2f€", offer.getFinalPrice()),
+                displayOfferState(offer.getEstado()),
                 offer.getBuyer().getName(),
                 offer.getBuyer().getEmail(),
                 dateFormat.format(offer.getAcceptanceDate())
@@ -107,5 +109,15 @@ public class ViewAcceptedOffersGUI extends JFrame {
                 labels.getString("ViewAcceptedOffersGUI.NoOffers"), 
                 labels.getString("Accept"), JOptionPane.INFORMATION_MESSAGE);
         }
+    }
+
+    private String displayOfferState(AcceptedOffer.EstadoOferta estado) {
+        if (estado == null || estado == AcceptedOffer.EstadoOferta.PENDIENTE) {
+            return labels.getString("SellerViewMyOffersGUI.Pending");
+        }
+        if (estado == AcceptedOffer.EstadoOferta.ACEPTADA) {
+            return labels.getString("SellerViewMyOffersGUI.Accepted");
+        }
+        return labels.getString("SellerViewMyOffersGUI.NotAccepted");
     }
 }

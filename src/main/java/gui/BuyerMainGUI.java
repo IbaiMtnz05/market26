@@ -13,7 +13,8 @@ import java.util.ResourceBundle;
 public class BuyerMainGUI extends JFrame {
     private String buyerEmail;
     private JButton btnAcceptOffers;
-    private JButton btnViewAvailable;
+    private JButton btnBrowseAvailable;
+    private JButton btnBuyFromList;
     private JButton btnViewAccepted;
     private JButton btnLogout;
     private JLabel lblWelcome;
@@ -23,7 +24,7 @@ public class BuyerMainGUI extends JFrame {
         this.buyerEmail = buyerEmail;
         
         setTitle(labels.getString("BuyerMainGUI.Title"));
-        setSize(560, 360);
+        setSize(560, 410);
         setLocationRelativeTo(null);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         
@@ -44,7 +45,7 @@ public class BuyerMainGUI extends JFrame {
         // Panel central con botones
         JPanel centerPanel = new JPanel();
         centerPanel.setBackground(new Color(245, 247, 250));
-        centerPanel.setLayout(new GridLayout(4, 1, 10, 10));
+        centerPanel.setLayout(new GridLayout(5, 1, 10, 10));
         
         btnAcceptOffers = new JButton(labels.getString("BuyerMainGUI.AcceptOffers"));
         btnAcceptOffers.setFont(new Font("Segoe UI", Font.PLAIN, 14));
@@ -56,15 +57,25 @@ public class BuyerMainGUI extends JFrame {
         });
         centerPanel.add(btnAcceptOffers);
 
-        btnViewAvailable = new JButton(labels.getString("BuyerMainGUI.ViewAvailable"));
-        btnViewAvailable.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        btnViewAvailable.addActionListener(new ActionListener() {
+        btnBrowseAvailable = new JButton(labels.getString("BuyerMainGUI.ViewAvailable"));
+        btnBrowseAvailable.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        btnBrowseAvailable.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 JFrame viewSalesGUI = new QuerySalesGUI();
                 viewSalesGUI.setVisible(true);
             }
         });
-        centerPanel.add(btnViewAvailable);
+        centerPanel.add(btnBrowseAvailable);
+
+        btnBuyFromList = new JButton(labels.getString("BuyerMainGUI.BuyFromList"));
+        btnBuyFromList.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        btnBuyFromList.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                JFrame viewSalesGUI = new QuerySalesGUI(buyerEmail);
+                viewSalesGUI.setVisible(true);
+            }
+        });
+        centerPanel.add(btnBuyFromList);
         
         btnViewAccepted = new JButton(labels.getString("BuyerMainGUI.ViewAccepted"));
         btnViewAccepted.setFont(new Font("Segoe UI", Font.PLAIN, 14));

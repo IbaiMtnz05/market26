@@ -31,6 +31,7 @@ import exceptions.InvalidPriceException;
  */
 public class AcceptOfferGUI extends JFrame {
     private String buyerEmail;
+    private Integer preselectedSaleNumber;
     private JTable tableSales;
     private DefaultTableModel tableModel;
     private JButton btnAccept, btnRefresh;
@@ -43,7 +44,12 @@ public class AcceptOfferGUI extends JFrame {
      * @param buyerEmail the email of the buyer viewing offers
      */
     public AcceptOfferGUI(String buyerEmail) {
+        this(buyerEmail, null);
+    }
+
+    public AcceptOfferGUI(String buyerEmail, Integer preselectedSaleNumber) {
         this.buyerEmail = buyerEmail;
+        this.preselectedSaleNumber = preselectedSaleNumber;
         
         setTitle(labels.getString("AcceptOfferGUI.Title"));
         setSize(900, 450);
@@ -116,10 +122,31 @@ public class AcceptOfferGUI extends JFrame {
                 sale.getSeller().getName()
             });
         }
+
+        selectPreselectedSale();
+    }
+
+    private void selectPreselectedSale() {
+        if (preselectedSaleNumber == null) {
+            return;
+        }
+
+        for (int row = 0; row < tableModel.getRowCount(); row++) {
+            Integer saleNumber = (Integer) tableModel.getValueAt(row, 0);
+            if (preselectedSaleNumber.equals(saleNumber)) {
+                tableSales.setRowSelectionInterval(row, row);
+                tableSales.scrollRectToVisible(tableSales.getCellRect(row, 0, true));
+                return;
+            }
+        }
     }
     
     private void handleAcceptOffer() {
         int selectedRow = tableSales.getSelectedRow();
+		if (selectedRow < 0 && preselectedSaleNumber != null) {
+			selectPreselectedSale();
+			selectedRow = tableSales.getSelectedRow();
+		}
         
         if (selectedRow < 0) {
             JOptionPane.showMessageDialog(this, 

@@ -496,9 +496,20 @@ public class DataAccess  {
 						sale.getPrice()));
 				}
 			}
+
+			TypedQuery<Long> existingOfferQuery = db.createQuery(
+				"SELECT COUNT(a) FROM AcceptedOffer a WHERE a.sale.saleNumber = :saleNumber AND a.buyer.email = :buyerEmail",
+				Long.class);
+			existingOfferQuery.setParameter("saleNumber", saleNumber);
+			existingOfferQuery.setParameter("buyerEmail", buyerEmail);
+			if (existingOfferQuery.getSingleResult() > 0) {
+				db.getTransaction().rollback();
+				return null;
+			}
 			
 			// Crear registro de aceptación con precio negociado
 			AcceptedOffer accepted = new AcceptedOffer(buyer, sale, negotiatedPrice);
+			accepted.setEstado(AcceptedOffer.EstadoOferta.PENDIENTE);
 			
 			// Añadir a la lista del comprador
 			buyer.addAcceptedOffer(accepted);
@@ -605,19 +616,67 @@ public class DataAccess  {
     		Sale sale = db.find(Sale.class, saleNumber);
     		AcceptedOffer acceptedOffer = db.find(AcceptedOffer.class, acceptedOfferId);
     		
-    		if (sale == null || acceptedOffer == null) {
+	    		if (sale == null || acceptedOffer == null) {
     			db.getTransaction().rollback();
     			return null;	
     		}
+
+	    		if (!acceptedOffer.getSale().getSaleNumber().equals(saleNumber)) {
+	    			db.getTransaction().rollback();
+	    			return null;
+	    		}
+
+	    		if (existsDecisionForSale(saleNumber)) {
+	    			db.getTransaction().rollback();
+	    			return null;
+	    		}
+
+	    		String criterioFinal = (criterio == null || criterio.trim().isEmpty())
+	    				? CriterioDecision.OTRO.name()
+	    				: criterio.trim();
+	    		String motivoFinal = (motivo == null)
+	    				? ""
+	    				: motivo.trim();
     		
 			DecisionVenta decision = new DecisionVenta(
 				sale,
 				acceptedOffer,
 				sale.getSeller().getEmail(),
-				criterio,
-				motivo);
+				criterioFinal,
+				motivoFinal);
     		
     		db.persist(decision);
+			acceptedOffer.setEstado(AcceptedOffer.EstadoOferta.ACEPTADA);
+			db.merge(acceptedOffer);
+
+			TypedQuery<AcceptedOffer> otherOffersQuery = db.createQuery(
+				"SELECT a FROM AcceptedOffer a WHERE a.sale.saleNumber = :saleNumber AND a.id <> :acceptedOfferId",
+				AcceptedOffer.class);
+			otherOffersQuery.setParameter("saleNumber", saleNumber);
+			otherOffersQuery.setParameter("acceptedOfferId", acceptedOfferId);
+			List<AcceptedOffer> otherOffers = otherOffersQuery.getResultList();
+			for (AcceptedOffer otherOffer : otherOffers) {
+				if (otherOffer.getEstado() == null || otherOffer.getEstado() == AcceptedOffer.EstadoOferta.PENDIENTE) {
+					otherOffer.setEstado(AcceptedOffer.EstadoOferta.RECHAZADA);
+					db.merge(otherOffer);
+				}
+			}
+
+	    		float importe = acceptedOffer.getFinalPrice();
+	    		if (importe <= 0) {
+	    			db.getTransaction().rollback();
+	    			return null;
+	    		}
+
+			TransaccionPago transaccion = new TransaccionPago(
+				saleNumber,
+				acceptedOffer.getBuyer().getEmail(),
+				importe);
+			transaccion.setEstado(TransaccionPago.EstadoPago.PENDIENTE);
+			transaccion.setReferenciaExterna("REF-" + System.currentTimeMillis());
+			transaccion.setEstado(TransaccionPago.EstadoPago.CONFIRMADO);
+			db.persist(transaccion);
+
     		db.getTransaction().commit();
     		return decision;
     	} catch (Exception e) {
@@ -648,7 +707,29 @@ public class DataAccess  {
                 return null;
             }
 
+			DecisionVenta decision = getDecisionBySale(saleNumber);
+			if (decision == null || decision.getAcceptedOffer() == null ||
+				!decision.getAcceptedOffer().getBuyer().getEmail().equalsIgnoreCase(buyerEmail)) {
+				db.getTransaction().rollback();
+				return null;
+			}
+
+			TypedQuery<TransaccionPago> existingQuery = db.createQuery(
+				"SELECT t FROM TransaccionPago t WHERE t.saleNumber = :saleNumber " +
+				"AND t.buyerEmail = :buyerEmail AND t.estado = :estado ORDER BY t.id DESC",
+				TransaccionPago.class);
+			existingQuery.setParameter("saleNumber", saleNumber);
+			existingQuery.setParameter("buyerEmail", buyerEmail);
+			existingQuery.setParameter("estado", TransaccionPago.EstadoPago.CONFIRMADO);
+			existingQuery.setMaxResults(1);
+			List<TransaccionPago> existing = existingQuery.getResultList();
+			if (!existing.isEmpty()) {
+				db.getTransaction().rollback();
+				return existing.get(0);
+			}
+
 			TransaccionPago transaccion = new TransaccionPago(saleNumber, buyerEmail, importe);
+			transaccion.setEstado(TransaccionPago.EstadoPago.PENDIENTE);
 			transaccion.setEstado(TransaccionPago.EstadoPago.CONFIRMADO);
 			transaccion.setReferenciaExterna("REF-" + System.currentTimeMillis());
 
@@ -682,14 +763,28 @@ public class DataAccess  {
 	 */
     public ComisionMarketplace calcularComision(Integer transaccionPagoId, float porcentaje) {
         try {
+            db.getTransaction().begin();
+
             TransaccionPago transaccion = db.find(TransaccionPago.class, transaccionPagoId);
 			if (transaccion == null ||
 				!transaccion.getEstado().equals(TransaccionPago.EstadoPago.CONFIRMADO)) {
+				db.getTransaction().rollback();
                 return null;
             }
 
+			ComisionMarketplace existing = getComisionByTransaccionId(transaccionPagoId);
+			if (existing != null) {
+				if (db.getTransaction().isActive()) {
+					db.getTransaction().rollback();
+				}
+				return existing;
+			}
+
 			Sale sale = db.find(Sale.class, transaccion.getSaleNumber());
-			if (sale == null) return null;
+			if (sale == null) {
+				db.getTransaction().rollback();
+				return null;
+			}
 
 			ComisionMarketplace comision = new ComisionMarketplace(
 				transaccionPagoId,
@@ -697,34 +792,78 @@ public class DataAccess  {
 				transaccion.getImporte(),
 				porcentaje);
             db.persist(comision);
+			db.getTransaction().commit();
             return comision;
         } catch (Exception e) {
             e.printStackTrace();
+            if (db.getTransaction().isActive()) {
+                db.getTransaction().rollback();
+            }
             return null;
         }
     }
+
+	/**
+	 * Liquida una comisión ya calculada.
+	 */
+	public ComisionMarketplace liquidarComision(Integer comisionId) {
+		try {
+			db.getTransaction().begin();
+			ComisionMarketplace comision = db.find(ComisionMarketplace.class, comisionId);
+			if (comision == null) {
+				db.getTransaction().rollback();
+				return null;
+			}
+
+			String currentState = comision.getEstado();
+			if (!isCommissionState(currentState, "ComisionMarketplace.Estado.CALCULADA") &&
+				!isCommissionState(currentState, "ComisionMarketplace.Estado.LIQUIDADA")) {
+				db.getTransaction().rollback();
+				return null;
+			}
+
+			if (isCommissionState(currentState, "ComisionMarketplace.Estado.LIQUIDADA")) {
+				db.getTransaction().rollback();
+				return comision;
+			}
+
+			comision.setEstado("ComisionMarketplace.Estado.LIQUIDADA");
+			db.merge(comision);
+			db.getTransaction().commit();
+			return comision;
+		} catch (Exception e) {
+			if (db.getTransaction().isActive()) {
+				db.getTransaction().rollback();
+			}
+			e.printStackTrace();
+			return null;
+		}
+	}
     
     /**
      * Registra una solicitud de reembolso para una transacción de pago dada, con validaciones para el importe y tipo de reembolso.
      */
-    public Reembolso solicitarReembolso(Integer transaccionPagoId, float importe,
-                                   String motivo, String buyerEmail) {
-		try {
-			TransaccionPago transaccion = db.find(TransaccionPago.class, transaccionPagoId);
-			if (transaccion == null) return null;
+	public Reembolso solicitarReembolso(Integer transaccionPagoId, float importe,
+            String motivo, String buyerEmail, 
+            String vendedorEmail, String observaciones) {
+			try {
+				TransaccionPago transaccion = db.find(TransaccionPago.class, transaccionPagoId);
+				if (transaccion == null) return null;
 
-			Reembolso.TipoReembolso tipo = (importe >= transaccion.getImporte())
-					? Reembolso.TipoReembolso.TOTAL
-					: Reembolso.TipoReembolso.PARCIAL;
+				Reembolso.TipoReembolso tipo = (importe >= transaccion.getImporte())
+						? Reembolso.TipoReembolso.TOTAL
+								: Reembolso.TipoReembolso.PARCIAL;
 
-			Reembolso reembolso = new Reembolso(transaccionPagoId, buyerEmail,
-											   tipo, importe, motivo);
-			db.persist(reembolso);
-			return reembolso;
-		} catch (Exception e) {
-			e.printStackTrace();
-			return null;
-		}
+				// Necesitas un constructor con 7 parámetros
+				Reembolso reembolso = new Reembolso(transaccionPagoId, buyerEmail,
+                     vendedorEmail, tipo, importe, 
+                     motivo, observaciones);
+				db.persist(reembolso);
+				return reembolso;
+			} catch (Exception e) {
+				e.printStackTrace();
+				return null;
+			}
 	}
     
 	/**
@@ -789,4 +928,78 @@ public class DataAccess  {
 		String emailRegex = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$";
 		return email.matches(emailRegex);
 	}
+
+	private boolean existsDecisionForSale(Integer saleNumber) {
+		TypedQuery<Long> query = db.createQuery(
+			"SELECT COUNT(d) FROM DecisionVenta d WHERE d.saleNumber = :saleNumber",
+			Long.class);
+		query.setParameter("saleNumber", saleNumber);
+		return query.getSingleResult() > 0;
+	}
+
+	public DecisionVenta getDecisionBySale(Integer saleNumber) {
+		TypedQuery<DecisionVenta> query = db.createQuery(
+			"SELECT d FROM DecisionVenta d WHERE d.saleNumber = :saleNumber ORDER BY d.id DESC",
+			DecisionVenta.class);
+		query.setParameter("saleNumber", saleNumber);
+		query.setMaxResults(1);
+		List<DecisionVenta> decisions = query.getResultList();
+		return decisions.isEmpty() ? null : decisions.get(0);
+	}
+
+	public ComisionMarketplace getComisionByTransaccionId(Integer transaccionPagoId) {
+		TypedQuery<ComisionMarketplace> query = db.createQuery(
+			"SELECT c FROM ComisionMarketplace c WHERE c.transaccionPagoId = :transaccionPagoId",
+			ComisionMarketplace.class);
+		query.setParameter("transaccionPagoId", transaccionPagoId);
+		query.setMaxResults(1);
+		List<ComisionMarketplace> commissions = query.getResultList();
+		return commissions.isEmpty() ? null : commissions.get(0);
+	}
+
+	public boolean isCommissionState(String value, String expectedKey) {
+		if (value == null) {
+			return false;
+		}
+		if (expectedKey.equals(value)) {
+			return true;
+		}
+		try {
+			return msg(expectedKey).equals(value);
+		} catch (Exception e) {
+			return false;
+		}
+	}
+	
+	public Sale findSale(Integer saleNumber) {
+	    return db.find(Sale.class, saleNumber);
+	}
+
+	/**
+	 * Obtiene la transacción de pago confirmada para una venta
+	 */
+	public TransaccionPago getTransaccionConfirmadaBySale(Integer saleNumber) {
+	    TypedQuery<TransaccionPago> query = db.createQuery(
+	        "SELECT t FROM TransaccionPago t WHERE t.saleNumber = :saleNumber " +
+	        "AND t.estado = :estado ORDER BY t.id DESC", 
+	        TransaccionPago.class);
+	    query.setParameter("saleNumber", saleNumber);
+	    query.setParameter("estado", TransaccionPago.EstadoPago.CONFIRMADO);
+	    query.setMaxResults(1);
+	    List<TransaccionPago> results = query.getResultList();
+	    return results.isEmpty() ? null : results.get(0);
+	}
+
+	/**
+	 * Verifica si ya existe un reembolso para una transacción
+	 */
+	public boolean existeReembolsoPorTransaccion(Integer transaccionPagoId) {
+	    TypedQuery<Long> query = db.createQuery(
+	        "SELECT COUNT(r) FROM Reembolso r WHERE r.transaccionPagoId = :transaccionId",
+	        Long.class);
+	    query.setParameter("transaccionId", transaccionPagoId);
+	    return query.getSingleResult() > 0;
+	}
+
+
 }

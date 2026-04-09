@@ -258,15 +258,29 @@ public class BLFacadeImplementation  implements BLFacade {
     public ComisionMarketplace calcularComision(Integer transaccionPagoId, float porcentaje) {
 		return execute(() -> dbManager.calcularComision(transaccionPagoId, porcentaje));
     }
+
+	/**
+	 * {@inheritDoc}
+	 */
+    @WebMethod
+    public ComisionMarketplace liquidarComision(Integer comisionId) {
+		return execute(() -> dbManager.liquidarComision(comisionId));
+    }
     
     /**
 	 * {@inheritDoc}
 	 */
     @WebMethod
     public Reembolso solicitarReembolso(Integer transaccionPagoId, float importe,
-										String motivo, String buyerEmail) {
-		return execute(() -> dbManager.solicitarReembolso(transaccionPagoId, importe,
-													  motivo, buyerEmail));
+            String motivo, String buyerEmail,
+            String vendedorEmail, String observaciones) {
+    	dbManager.open();
+    	try {
+    		return dbManager.solicitarReembolso(transaccionPagoId, importe, motivo, 
+                    buyerEmail, vendedorEmail, observaciones);
+    	} finally {
+    		dbManager.close();
+    	}
     }
     
     /**
@@ -292,5 +306,58 @@ public class BLFacadeImplementation  implements BLFacade {
     public List<Reembolso> getReembolsosByBuyer(String buyerEmail) {
 		return execute(() -> dbManager.getReembolsosByBuyer(buyerEmail));
     }
+    
+    @WebMethod
+    public Reembolso gestionarReembolsoPorVendedor(Integer saleNumber, String vendedorEmail,
+            float importeReembolso, String motivo,
+            String observaciones) 
+            throws IllegalStateException {
+    dbManager.open();
+    try {
+        // Validar que la venta existe y pertenece al vendedor
+        Sale sale = dbManager.findSale(saleNumber);
+        if (sale == null) {
+            throw new IllegalStateException("La venta no existe");
+        }
+        if (!sale.getSeller().getEmail().equals(vendedorEmail)) {
+            throw new SecurityException("Solo el vendedor puede gestionar reembolsos de esta venta");
+        }
+
+        // Validar que la venta tiene una decisión tomada
+        DecisionVenta decision = dbManager.getDecisionBySale(saleNumber);
+        if (decision == null) {
+            throw new IllegalStateException("La venta no tiene un comprador seleccionado aún");
+        }
+
+        // Validar que existe transacción de pago
+        TransaccionPago transaccion = dbManager.getTransaccionConfirmadaBySale(saleNumber);
+        if (transaccion == null) {
+            throw new IllegalStateException("No hay transacción de pago confirmada para esta venta");
+        }
+
+        // Validar que no haya reembolso previo para esta transacción
+        if (dbManager.existeReembolsoPorTransaccion(transaccion.getId())) {
+            throw new IllegalStateException("Ya se ha solicitado un reembolso para esta transacción");
+        }
+
+        // Validar importe
+        if (importeReembolso <= 0) {
+            throw new IllegalArgumentException("El importe del reembolso debe ser positivo");
+        }
+        if (importeReembolso > transaccion.getImporte()) {
+            throw new IllegalArgumentException("El importe del reembolso no puede superar el importe pagado");
+        }
+
+        // Registrar el reembolso - AHORA CON 7 ARGUMENTOS
+        String buyerEmail = decision.getAcceptedOffer().getBuyer().getEmail();
+        return dbManager.solicitarReembolso(transaccion.getId(), importeReembolso, motivo, 
+                                            buyerEmail, vendedorEmail, observaciones);
+
+    } finally {
+        dbManager.close();
+    }
+}
+
+	
 }
 

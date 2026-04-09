@@ -23,6 +23,7 @@ public class QuerySalesGUI extends JFrame {
 
 	private JButton jButtonSearch = new JButton(ResourceBundle.getBundle("Etiquetas").getString("QuerySalesGUI.Search")); 
 	private JButton jButtonClose = new JButton(ResourceBundle.getBundle("Etiquetas").getString("Close"));
+	private JButton jButtonOffer;
 
 	private JScrollPane scrollPanelProducts = new JScrollPane();
 	private JTable tableProducts= new JTable();
@@ -30,6 +31,7 @@ public class QuerySalesGUI extends JFrame {
 	private DefaultTableModel tableModelProducts;
 
 	private JFrame thisFrame; 
+	private String buyerEmail;
 
 	private String[] columnNamesProducts = new String[] {
 			ResourceBundle.getBundle("Etiquetas").getString("CreateSaleGUI.Title"), 
@@ -41,7 +43,12 @@ public class QuerySalesGUI extends JFrame {
 	
 
 	public QuerySalesGUI() {
-		tableProducts.setEnabled(false);
+		this(null);
+	}
+
+	public QuerySalesGUI(String buyerEmail) {
+		this.buyerEmail = buyerEmail;
+		tableProducts.setEnabled(true);
 		thisFrame=this;
 		this.getContentPane().setLayout(null);
 		this.setSize(new Dimension(700, 500));
@@ -61,6 +68,17 @@ public class QuerySalesGUI extends JFrame {
 		});		
 		
 		this.getContentPane().add(jButtonClose, null);
+
+		if (buyerEmail != null) {
+			jButtonOffer = new JButton(ResourceBundle.getBundle("Etiquetas").getString("QuerySalesGUI.BuyFromList"));
+			jButtonOffer.addActionListener(new ActionListener() {
+				public void actionPerformed(ActionEvent e) {
+					handleBuyFromList();
+				}
+			});
+			jButtonOffer.setBounds(new Rectangle(427, 379, 190, 30));
+			this.getContentPane().add(jButtonOffer, null);
+		}
 
 		scrollPanelProducts.setBounds(new Rectangle(52, 137, 459, 150));
 
@@ -132,11 +150,30 @@ public class QuerySalesGUI extends JFrame {
 		            	Point point = mouseEvent.getPoint();
 				        int row = table.rowAtPoint(point);
 		            	Sale s=(Sale) tableModelProducts.getValueAt(row, 3);
-			            new ShowSaleGUI(s);
+		            if (buyerEmail != null) {
+		            	new AcceptOfferGUI(buyerEmail, s.getSaleNumber()).setVisible(true);
+		            } else {
+		            	new ShowSaleGUI(s);
+		            }
 		            }
 		        }
 		 });
 
 		jButtonSearch.doClick();
+	}
+
+	private void handleBuyFromList() {
+		int selectedRow = tableProducts.getSelectedRow();
+		if (selectedRow < 0) {
+			JOptionPane.showMessageDialog(this,
+				ResourceBundle.getBundle("Etiquetas").getString("QuerySalesGUI.SelectSale"),
+				ResourceBundle.getBundle("Etiquetas").getString("SellerViewMyOffersGUI.ErrorTitle"),
+				JOptionPane.ERROR_MESSAGE);
+			return;
+		}
+
+		Sale sale = (Sale) tableModelProducts.getValueAt(selectedRow, 3);
+		AcceptOfferGUI offerGUI = new AcceptOfferGUI(buyerEmail, sale.getSaleNumber());
+		offerGUI.setVisible(true);
 	}
 }

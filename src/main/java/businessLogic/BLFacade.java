@@ -191,6 +191,14 @@ public interface BLFacade  {
     public ComisionMarketplace calcularComision(Integer transaccionPagoId, float porcentaje);
 
 	/**
+	 * Liquida una comisión ya calculada del marketplace.
+	 * @param comisionId id de la comisión
+	 * @return ComisionMarketplace actualizada
+	 */
+    @WebMethod
+    public ComisionMarketplace liquidarComision(Integer comisionId);
+
+	/**
 	 * Solicita un reembolso total o parcial al comprador por incidencia post-venta.
 	 * @param transaccionPagoId id de la transaccion original
 	 * @param importe importe a devolver
@@ -200,7 +208,7 @@ public interface BLFacade  {
 	 */
     @WebMethod
     public Reembolso solicitarReembolso(Integer transaccionPagoId, float importe,
-										String motivo, String buyerEmail);
+										String motivo, String buyerEmail,String vendedorEmail, String observaciones);
     /**
 	 * Obtiene las decisiones de venta tomadas por un vendedor, incluyendo el criterio de decisión y el motivo.
 	 * @param sellerEmail email del vendedor
@@ -225,4 +233,10 @@ public interface BLFacade  {
 	 */
     @WebMethod
     public List<Reembolso> getReembolsosByBuyer(String buyerEmail);
+    
+    @WebMethod
+    public Reembolso gestionarReembolsoPorVendedor(Integer saleNumber, String vendedorEmail,
+                                                    float importeReembolso, String motivo,
+                                                    String observaciones) 
+                                                    throws IllegalStateException;
 }
