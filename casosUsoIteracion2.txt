@@ -1,0 +1,44 @@
+PROPUESTA DE CASOS DE USO NUEVOS - ITERACION 2
+
+Contexto:
+Los casos "realizar propuesta", "consultar propuestas" y "aceptar propuesta" ya existen en la iteracion actual. En esta propuesta se definen casos nuevos, sin solapamiento funcional.
+
+Objetivo de iteracion 2:
+Extender el flujo de venta ya existente para mejorar la decision del vendedor y la gestion economica completa (cobro, comision y devoluciones).
+
+Nuevas clases de dominio propuestas (minimo 2):
+- DecisionVenta: registra la decision del vendedor sobre una propuesta concreta (motivo, fecha, criterios usados).
+- TransaccionPago: registra cada intento de cobro (importe, estado, fecha, referencia pasarela).
+- ComisionMarketplace: representa la comision que aplica la plataforma a una venta.
+- Reembolso: representa la devolucion total o parcial al comprador.
+
+Casos de uso nuevos propuestos para implementar:
+
+1. Decidir comprador con criterios de seleccion
+Actor principal: Vendedor
+Descripcion: Para una oferta con varias propuestas ya recibidas, el vendedor selecciona comprador usando criterios (mejor precio, mejor valoracion, antiguedad de propuesta, etc.). El sistema guarda la trazabilidad de la decision.
+Clases implicadas: Product, Proposal existente, DecisionVenta.
+Resultado: Queda registrada la decision del vendedor de forma auditable.
+
+2. Cobro transaccional del precio del producto
+Actor principal: Sistema
+Descripcion: Tras la decision del vendedor, el sistema ejecuta el cobro al comprador por el precio del producto, con estados (PENDIENTE, CONFIRMADO, FALLIDO) e identificador de transaccion.
+Clases implicadas: Sale existente, Buyer, TransaccionPago.
+Resultado: Cobro registrado y vinculado a la venta.
+
+3. Calcular y liquidar comision del marketplace
+Actor principal: Sistema
+Descripcion: Cuando el pago queda confirmado, el sistema calcula la comision del marketplace y deja preparado el importe neto para el vendedor.
+Clases implicadas: TransaccionPago, ComisionMarketplace, Seller.
+Resultado: Comision trazable y saldo neto de vendedor calculado.
+
+4. Gestionar reembolso por incidencia postventa
+Actor principal: Vendedor (con apoyo del sistema)
+Descripcion: Ante una incidencia validada (producto defectuoso, cancelacion acordada), se puede lanzar un reembolso total o parcial al comprador.
+Clases implicadas: Reembolso, TransaccionPago, Sale existente.
+Resultado: Devolucion registrada con impacto economico controlado.
+
+Notas de alcance:
+- Se cumple el requisito de que el vendedor decide a quien vende entre propuestas (caso 1).
+- Se cumple el requisito de cobrar al comprador el precio del producto (caso 2).
+- Se proponen 4 casos de uso nuevos y se introducen 4 clases de dominio nuevas (superando el minimo de 2).
