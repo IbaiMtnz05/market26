@@ -15,3 +15,4 @@ src/main/resources/*.temp$
 *.temp
 *.temp$
 entregaSegundaIteracion.txt
+*.class
