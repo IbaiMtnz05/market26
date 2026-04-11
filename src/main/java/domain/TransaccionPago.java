@@ -11,7 +11,7 @@ import javax.persistence.Id;
 public class TransaccionPago implements Serializable {
     private static final long serialVersionUID = 1L;
 
-    public enum EstadoPago { PENDIENTE, CONFIRMADO, FALLIDO }
+    public enum EstadoPago { PENDIENTE, CONFIRMADO, FALLIDO, REEMBOLSADO }
 
     @Id
     @GeneratedValue

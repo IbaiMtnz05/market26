@@ -35,6 +35,7 @@ public class MainGUI extends JFrame {
 	private JButton jButtonViewCommissions = null;
 	private JButton jButtonLogout = null;
 	private JButton jButtonViewMyOffers = null;
+	private JButton jButtonManageRefunds = null;
 	private final ResourceBundle labels = ResourceBundle.getBundle("Etiquetas");
 
     private static BLFacade appFacadeInterface;
@@ -101,6 +102,16 @@ public class MainGUI extends JFrame {
 				commissionsGUI.setVisible(true);
 			}
 		});
+
+		jButtonManageRefunds = new JButton();
+		jButtonManageRefunds.setText(labels.getString("MainGUI.ManageRefunds"));
+		jButtonManageRefunds.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+		jButtonManageRefunds.addActionListener(new java.awt.event.ActionListener() {
+			public void actionPerformed(java.awt.event.ActionEvent e) {
+				JFrame refundsGUI = new GestionarReembolsoGUI(sellerMail);
+				refundsGUI.setVisible(true);
+			}
+		});
 		
 		jButtonLogout = new JButton();
 		jButtonLogout.setText(labels.getString("MainGUI.Logout"));
@@ -115,12 +126,13 @@ public class MainGUI extends JFrame {
 
 		jContentPane = new JPanel();
 		jContentPane.setBackground(new Color(245, 247, 250));
-		jContentPane.setLayout(new GridLayout(6, 1, 0, 10));
+		jContentPane.setLayout(new GridLayout(7, 1, 0, 10));
 		jContentPane.add(jLabelSelectOption);
 		jContentPane.add(jButtonCreateQuery);
 		jContentPane.add(jButtonQueryQueries);
 		jContentPane.add(jButtonViewMyOffers); 
 		jContentPane.add(jButtonViewCommissions);
+		jContentPane.add(jButtonManageRefunds);
 		jContentPane.add(jButtonLogout);
 		
 		
@@ -141,6 +153,7 @@ public class MainGUI extends JFrame {
 		jButtonQueryQueries.setText(l.getString("MainGUI.ViewAvailable"));
 		jButtonCreateQuery.setText(l.getString("MainGUI.CreateSale"));
 		jButtonViewCommissions.setText(l.getString("MainGUI.ViewCommissions"));
+		jButtonManageRefunds.setText(l.getString("MainGUI.ManageRefunds"));
 		jButtonLogout.setText(l.getString("MainGUI.Logout"));
 		this.setTitle(l.getString("MainGUI.MainTitle")+ ": "+sellerMail);
 	}

@@ -16,6 +16,7 @@ import javax.imageio.ImageIO;
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.Persistence;
+import javax.persistence.PersistenceException;
 import javax.persistence.TypedQuery;
 
 import configuration.ConfigXML;
@@ -303,8 +304,23 @@ public class DataAccess  {
 			if (img == null) {
 				return;
 			}
-			File output = new File(basePath + file.getName());
-			ImageIO.write(img, "png", output);
+			File outputDir = new File(basePath);
+			if (!outputDir.exists() && !outputDir.mkdirs()) {
+				throw new IOException("Cannot create image directory: " + outputDir.getAbsolutePath());
+			}
+
+			String format = "png";
+			String name = file.getName();
+			int dotIndex = name.lastIndexOf('.');
+			if (dotIndex > 0 && dotIndex < name.length() - 1) {
+				String ext = name.substring(dotIndex + 1).toLowerCase();
+				if ("png".equals(ext) || "jpg".equals(ext) || "jpeg".equals(ext) || "gif".equals(ext) || "bmp".equals(ext)) {
+					format = ext;
+				}
+			}
+
+			File output = new File(outputDir, name);
+			ImageIO.write(img, format, output);
 		} catch (IOException e) {
 			throw new RuntimeException("Error saving image file: " + file.getName(), e);
 		}
@@ -847,6 +863,7 @@ public class DataAccess  {
             String motivo, String buyerEmail, 
             String vendedorEmail, String observaciones) {
 			try {
+				db.getTransaction().begin();
 				TransaccionPago transaccion = db.find(TransaccionPago.class, transaccionPagoId);
 				if (transaccion == null) return null;
 
@@ -858,9 +875,20 @@ public class DataAccess  {
 				Reembolso reembolso = new Reembolso(transaccionPagoId, buyerEmail,
                      vendedorEmail, tipo, importe, 
                      motivo, observaciones);
+				reembolso.setEstado("EstadoReembolso.COMPLETADO");
+				reembolso.setEstadoResolucion("EstadoReembolso.COMPLETADO");
+				reembolso.setFechaResolucion(new Date());
+
+				transaccion.setEstado(TransaccionPago.EstadoPago.REEMBOLSADO);
+				db.merge(transaccion);
 				db.persist(reembolso);
+				db.flush();
+				db.getTransaction().commit();
 				return reembolso;
 			} catch (Exception e) {
+				if (db.getTransaction().isActive()) {
+					db.getTransaction().rollback();
+				}
 				e.printStackTrace();
 				return null;
 			}
@@ -994,11 +1022,15 @@ public class DataAccess  {
 	 * Verifica si ya existe un reembolso para una transacción
 	 */
 	public boolean existeReembolsoPorTransaccion(Integer transaccionPagoId) {
-	    TypedQuery<Long> query = db.createQuery(
-	        "SELECT COUNT(r) FROM Reembolso r WHERE r.transaccionPagoId = :transaccionId",
-	        Long.class);
-	    query.setParameter("transaccionId", transaccionPagoId);
-	    return query.getSingleResult() > 0;
+	    try {
+	        TypedQuery<Long> query = db.createQuery(
+	            "SELECT COUNT(r) FROM Reembolso r WHERE r.transaccionPagoId = :transaccionId",
+	            Long.class);
+	        query.setParameter("transaccionId", transaccionPagoId);
+	        return query.getSingleResult() > 0;
+	    } catch (PersistenceException e) {
+	        return false;
+	    }
 	}
 
 

@@ -3,7 +3,9 @@ package gui;
 import java.awt.BorderLayout;
 import java.awt.Font;
 import java.text.SimpleDateFormat;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.ResourceBundle;
 
 import javax.swing.BorderFactory;
@@ -19,6 +21,8 @@ import javax.swing.table.DefaultTableModel;
 
 import businessLogic.BLFacade;
 import domain.AcceptedOffer;
+import domain.Reembolso;
+import domain.TransaccionPago;
 
 /**
  * GUI window for buyers to view all the offers they have accepted.
@@ -56,6 +60,8 @@ public class ViewAcceptedOffersGUI extends JFrame {
         String[] columns = {labels.getString("ViewAcceptedOffersGUI.ColumnOffer"), 
                            labels.getString("ViewAcceptedOffersGUI.ColumnPrice"), 
                            labels.getString("ViewAcceptedOffersGUI.ColumnStatus"),
+                           labels.getString("ViewAcceptedOffersGUI.ColumnRefundStatus"),
+                           labels.getString("ViewAcceptedOffersGUI.ColumnRefundAmount"),
                            labels.getString("ViewAcceptedOffersGUI.ColumnBuyer"), 
                            labels.getString("ViewAcceptedOffersGUI.ColumnBuyerEmail"), 
                            labels.getString("ViewAcceptedOffersGUI.ColumnAcceptDate")};
@@ -88,27 +94,79 @@ public class ViewAcceptedOffersGUI extends JFrame {
         BLFacade facade = MainGUI.getBusinessLogic();
         List<AcceptedOffer> accepted = 
             facade.getAcceptedOffersByBuyer(buyerEmail);
+        List<Reembolso> reembolsos = facade.getReembolsosByBuyer(buyerEmail);
+
+        Map<Integer, Reembolso> reembolsoByTransaccion = new HashMap<>();
+        for (Reembolso reembolso : reembolsos) {
+            if (reembolso.getTransaccionPagoId() == null) {
+                continue;
+            }
+            Reembolso current = reembolsoByTransaccion.get(reembolso.getTransaccionPagoId());
+            if (current == null || (reembolso.getId() != null && current.getId() != null && reembolso.getId() > current.getId())) {
+                reembolsoByTransaccion.put(reembolso.getTransaccionPagoId(), reembolso);
+            }
+        }
         
         SimpleDateFormat dateFormat = 
             new SimpleDateFormat("dd/MM/yyyy HH:mm");
         
         for (AcceptedOffer offer : accepted) {
+            Reembolso reembolsoOferta = null;
+            List<TransaccionPago> transacciones = facade.getTransaccionesBySale(offer.getSale().getSaleNumber());
+            for (TransaccionPago transaccion : transacciones) {
+                if (!buyerEmail.equalsIgnoreCase(transaccion.getBuyerEmail())) {
+                    continue;
+                }
+                Reembolso encontrado = reembolsoByTransaccion.get(transaccion.getId());
+                if (encontrado != null) {
+                    if (reembolsoOferta == null ||
+                        (encontrado.getId() != null && reembolsoOferta.getId() != null && encontrado.getId() > reembolsoOferta.getId()) ||
+                        (reembolsoOferta.getId() == null && encontrado.getId() != null)) {
+                        reembolsoOferta = encontrado;
+                    }
+                }
+            }
+
             Object[] row = {
                 offer.getSale().getTitle(),
                 String.format("%.2f€", offer.getFinalPrice()),
                 displayOfferState(offer.getEstado()),
+                displayRefundState(reembolsoOferta),
+                reembolsoOferta != null ? String.format("%.2f€", reembolsoOferta.getImporte()) : "-",
                 offer.getBuyer().getName(),
                 offer.getBuyer().getEmail(),
                 dateFormat.format(offer.getAcceptanceDate())
             };
             tableModel.addRow(row);
         }
-        
+
         if (accepted.isEmpty()) {
             JOptionPane.showMessageDialog(this, 
                 labels.getString("ViewAcceptedOffersGUI.NoOffers"), 
                 labels.getString("Accept"), JOptionPane.INFORMATION_MESSAGE);
         }
+    }
+
+    private String displayRefundState(Reembolso reembolso) {
+        if (reembolso == null) {
+            return "-";
+        }
+
+        String estado = reembolso.getEstado();
+        if (estado == null || estado.trim().isEmpty()) {
+            return labels.getString("EstadoReembolso.PENDIENTE");
+        }
+
+        if (labels.containsKey(estado)) {
+            return labels.getString(estado);
+        }
+
+        String estadoKey = "EstadoReembolso." + estado;
+        if (labels.containsKey(estadoKey)) {
+            return labels.getString(estadoKey);
+        }
+
+        return estado;
     }
 
     private String displayOfferState(AcceptedOffer.EstadoOferta estado) {
