@@ -1132,8 +1132,15 @@ public class DataAccess  {
 	}
 
 	public int seedDemoSalesIfNeeded() {
-		TypedQuery<Long> countQuery = db.createQuery("SELECT COUNT(s) FROM Sale s", Long.class);
-		long current = countQuery.getSingleResult();
+		long current;
+		try {
+			TypedQuery<Long> countQuery = db.createQuery("SELECT COUNT(s) FROM Sale s", Long.class);
+			current = countQuery.getSingleResult();
+		} catch (PersistenceException e) {
+			// In a fresh ObjectDB file the entity metadata may not exist yet.
+			// Treat this as an empty dataset so demo seeding can bootstrap it.
+			current = 0L;
+		}
 		int target = 20;
 		if (current >= target) {
 			db.getTransaction().begin();
