@@ -1,0 +1,167 @@
+CASOS DE USO - ITERACION 3
+Proyecto: Marketplace
+Fecha: 13/04/2026
+
+==================================================
+UC-01: Gestionar categorias dinamicas
+==================================================
+Actor principal:
+- Vendedor
+
+Actores secundarios:
+- Administrador
+
+Objetivo:
+- Permitir clasificar productos en categorias y subcategorias utiles,
+  incluyendo propuestas de nuevas categorias.
+
+Precondiciones:
+- El vendedor ha iniciado sesion.
+- Existe la funcionalidad de crear/editar venta.
+
+Postcondiciones:
+- El producto queda asignado a una categoria valida.
+- Si se propone categoria nueva, queda pendiente de revision.
+
+Flujo principal:
+1. El vendedor accede a crear o editar una venta.
+2. El sistema muestra categorias existentes.
+3. El vendedor selecciona categoria principal y opcionalmente subcategoria.
+4. El vendedor guarda la venta.
+5. El sistema valida y persiste la clasificacion.
+
+Flujos alternativos:
+A1. Categoria no existente:
+1. El vendedor elige "Proponer nueva categoria".
+2. Introduce nombre y descripcion breve.
+3. El sistema registra la propuesta en estado pendiente.
+
+A2. Revision de propuesta por administrador:
+1. El administrador consulta propuestas pendientes.
+2. Aprueba o rechaza la nueva categoria.
+3. El sistema notifica el resultado al vendedor.
+
+Excepciones:
+- Nombre de categoria vacio o invalido.
+- Duplicado de categoria ya existente.
+
+==================================================
+UC-02: Ver feed personalizado de productos
+==================================================
+Actor principal:
+- Comprador
+
+Objetivo:
+- Mostrar un feed inicial ordenado por relevancia para cada comprador.
+
+Precondiciones:
+- El comprador ha iniciado sesion.
+- Existen productos activos publicados.
+
+Postcondiciones:
+- El comprador visualiza un feed personalizado y navegable.
+- Se almacenan interacciones para mejorar futuras sesiones.
+
+Flujo principal:
+1. El comprador entra a la pantalla principal.
+2. El sistema recupera productos candidatos (recientes, populares y afines).
+3. El sistema ordena y muestra el feed.
+4. El comprador puede abrir detalle, guardar o ofertar.
+5. El sistema registra las interacciones del comprador.
+
+Flujos alternativos:
+A1. Sin historial del comprador:
+1. El sistema usa criterios por defecto (popularidad y novedad).
+2. Muestra feed general inicial.
+
+A2. El comprador marca "No me interesa":
+1. El sistema oculta ese producto del feed actual.
+2. Reduce la prioridad de productos similares en adelante.
+
+Excepciones:
+- No hay productos activos: se muestra mensaje informativo.
+
+==================================================
+UC-03: Recomendacion con IA simple para ranking del feed
+==================================================
+Actor principal:
+- Comprador
+
+Actores secundarios:
+- Motor de recomendacion (IA simple)
+
+Objetivo:
+- Priorizar productos en el feed usando un modelo ligero de clasificacion.
+
+Precondiciones:
+- Existe un conjunto de productos candidatos.
+- Existen datos minimos de comportamiento o preferencias.
+
+Postcondiciones:
+- Cada producto candidato obtiene una puntuacion de interes.
+- El feed se ordena por dicha puntuacion.
+
+Flujo principal:
+1. El sistema recolecta caracteristicas por producto:
+   - coincidencia de categoria,
+   - ajuste al rango de precio,
+   - popularidad,
+   - afinidad por interacciones previas.
+2. El motor IA calcula una probabilidad de interes por producto.
+3. El sistema ordena productos por puntuacion descendente.
+4. El comprador visualiza el feed recomendado.
+5. El sistema registra nuevas interacciones para recalibrar el modelo.
+
+Flujos alternativos:
+A1. Historial insuficiente:
+1. El motor usa pesos por defecto.
+2. Se combina ranking por novedad + popularidad.
+
+A2. Producto con baja calidad de datos:
+1. El sistema aplica penalizacion de confianza.
+2. El producto no desaparece, pero baja en prioridad.
+
+Excepciones:
+- Fallo temporal del motor IA: fallback a ranking basico.
+
+Notas de implementacion:
+- Modelo sugerido: regresion logistica o score ponderado.
+- No requiere entrenamiento complejo en tiempo real.
+
+==================================================
+UC-04: Alertas de oportunidades (bajada de precio y nuevos matches)
+==================================================
+Actor principal:
+- Comprador
+
+Objetivo:
+- Notificar al comprador cuando aparezcan oportunidades relevantes.
+
+Precondiciones:
+- El comprador ha definido al menos una regla de seguimiento
+  (categoria, palabra clave o rango de precio).
+
+Postcondiciones:
+- El comprador recibe alertas utiles y accionables.
+
+Flujo principal:
+1. El comprador crea una regla de seguimiento.
+2. El sistema monitoriza nuevos productos y cambios de precio.
+3. Si detecta coincidencia relevante, genera una alerta.
+4. El comprador abre la alerta y accede al producto.
+5. El comprador decide guardar, ofertar o ignorar.
+
+Flujos alternativos:
+A1. Multiples coincidencias simultaneas:
+1. El sistema agrupa alertas por prioridad.
+2. Muestra primero las de mayor relevancia.
+
+A2. El comprador silencia una regla:
+1. El sistema detiene notificaciones de esa regla.
+2. Mantiene historico para reactivacion futura.
+
+Excepciones:
+- Regla mal definida (sin criterios validos).
+- Demasiadas alertas en poco tiempo: se aplica limite por periodo.
+
+Fin del documento.

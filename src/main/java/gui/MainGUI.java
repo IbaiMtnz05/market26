@@ -36,6 +36,7 @@ public class MainGUI extends JFrame {
 	private JButton jButtonLogout = null;
 	private JButton jButtonViewMyOffers = null;
 	private JButton jButtonManageRefunds = null;
+	private JButton jButtonManageCategories = null;
 	private final ResourceBundle labels = ResourceBundle.getBundle("Etiquetas");
 
     private static BLFacade appFacadeInterface;
@@ -59,13 +60,13 @@ public class MainGUI extends JFrame {
 		
 		this.setSize(560, 460);
 		jLabelSelectOption = new JLabel(labels.getString("MainGUI.SelectOption"));
-		jLabelSelectOption.setFont(new Font("Segoe UI", Font.BOLD, 14));
-		jLabelSelectOption.setForeground(Color.BLACK);
+		jLabelSelectOption.setFont(new Font("Dialog", Font.BOLD, 16));
+		jLabelSelectOption.setForeground(new Color(232, 236, 242));
 		jLabelSelectOption.setHorizontalAlignment(SwingConstants.CENTER);
 		
 		jButtonCreateQuery = new JButton();
 		jButtonCreateQuery.setText(labels.getString("MainGUI.CreateSale"));
-		jButtonCreateQuery.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+		jButtonCreateQuery.setFont(new Font("Dialog", Font.BOLD, 14));
 		jButtonCreateQuery.addActionListener(new java.awt.event.ActionListener() {
 			public void actionPerformed(java.awt.event.ActionEvent e) {
 				JFrame a = new CreateSaleGUI(sellerMail);
@@ -75,7 +76,7 @@ public class MainGUI extends JFrame {
 		
 		jButtonQueryQueries = new JButton();
 		jButtonQueryQueries.setText(labels.getString("MainGUI.ViewAvailable"));
-		jButtonQueryQueries.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+		jButtonQueryQueries.setFont(new Font("Dialog", Font.BOLD, 14));
 		jButtonQueryQueries.addActionListener(new java.awt.event.ActionListener() {
 			public void actionPerformed(java.awt.event.ActionEvent e) {
 				JFrame a = new QuerySalesGUI();
@@ -85,7 +86,7 @@ public class MainGUI extends JFrame {
 
 		jButtonViewMyOffers = new JButton();
 		jButtonViewMyOffers.setText(labels.getString("MainGUI.ViewMyOffers"));
-		jButtonViewMyOffers.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+		jButtonViewMyOffers.setFont(new Font("Dialog", Font.BOLD, 14));
 		jButtonViewMyOffers.addActionListener(new java.awt.event.ActionListener() {
 			public void actionPerformed(java.awt.event.ActionEvent e) {
 				JFrame sellerViewGUI = new SellerViewMyOffersGUI(sellerMail);
@@ -95,7 +96,7 @@ public class MainGUI extends JFrame {
 
 		jButtonViewCommissions = new JButton();
 		jButtonViewCommissions.setText(labels.getString("MainGUI.ViewCommissions"));
-		jButtonViewCommissions.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+		jButtonViewCommissions.setFont(new Font("Dialog", Font.BOLD, 14));
 		jButtonViewCommissions.addActionListener(new java.awt.event.ActionListener() {
 			public void actionPerformed(java.awt.event.ActionEvent e) {
 				JFrame commissionsGUI = new SellerCommissionsGUI(sellerMail);
@@ -105,17 +106,27 @@ public class MainGUI extends JFrame {
 
 		jButtonManageRefunds = new JButton();
 		jButtonManageRefunds.setText(labels.getString("MainGUI.ManageRefunds"));
-		jButtonManageRefunds.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+		jButtonManageRefunds.setFont(new Font("Dialog", Font.BOLD, 14));
 		jButtonManageRefunds.addActionListener(new java.awt.event.ActionListener() {
 			public void actionPerformed(java.awt.event.ActionEvent e) {
 				JFrame refundsGUI = new GestionarReembolsoGUI(sellerMail);
 				refundsGUI.setVisible(true);
 			}
 		});
+
+		jButtonManageCategories = new JButton();
+		jButtonManageCategories.setText("Categorias dinamicas");
+		jButtonManageCategories.setFont(new Font("Dialog", Font.BOLD, 14));
+		jButtonManageCategories.addActionListener(new java.awt.event.ActionListener() {
+			public void actionPerformed(java.awt.event.ActionEvent e) {
+				JFrame categoryGUI = new CategoryManagerGUI(sellerMail);
+				categoryGUI.setVisible(true);
+			}
+		});
 		
 		jButtonLogout = new JButton();
 		jButtonLogout.setText(labels.getString("MainGUI.Logout"));
-		jButtonLogout.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+		jButtonLogout.setFont(new Font("Dialog", Font.BOLD, 14));
 		jButtonLogout.addActionListener(new java.awt.event.ActionListener() {
 			public void actionPerformed(java.awt.event.ActionEvent e) {
 				JFrame loginGUI = new LoginGUI();
@@ -125,14 +136,15 @@ public class MainGUI extends JFrame {
 		});
 
 		jContentPane = new JPanel();
-		jContentPane.setBackground(new Color(245, 247, 250));
-		jContentPane.setLayout(new GridLayout(7, 1, 0, 10));
+		jContentPane.setBackground(new Color(21, 24, 30));
+		jContentPane.setLayout(new GridLayout(8, 1, 0, 10));
 		jContentPane.add(jLabelSelectOption);
 		jContentPane.add(jButtonCreateQuery);
 		jContentPane.add(jButtonQueryQueries);
 		jContentPane.add(jButtonViewMyOffers); 
 		jContentPane.add(jButtonViewCommissions);
 		jContentPane.add(jButtonManageRefunds);
+		jContentPane.add(jButtonManageCategories);
 		jContentPane.add(jButtonLogout);
 		
 		

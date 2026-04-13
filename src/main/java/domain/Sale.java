@@ -34,6 +34,7 @@ public class Sale implements Serializable {
 	private float price;
 	private Date pubDate;
 	private String fileName;
+	private String category;
 	
 	@ManyToOne(fetch = FetchType.EAGER)
 	@JoinColumn(name = "seller_email", nullable = false)
@@ -64,6 +65,7 @@ public class Sale implements Serializable {
 		this.price = price;
 		this.pubDate = pubDate;
 		this.fileName = (file != null) ? file.getName() : null;
+		this.category = "General";
 		this.seller = seller;
 	}
 	
@@ -216,6 +218,14 @@ public class Sale implements Serializable {
 	 */
 	public String getFile() {
 		return fileName;
+	}
+
+	public String getCategory() {
+		return category;
+	}
+
+	public void setCategory(String category) {
+		this.category = category;
 	}
 	
 	/**

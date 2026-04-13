@@ -21,6 +21,7 @@ import java.beans.PropertyChangeListener;
 
 import businessLogic.BLFacade;
 import configuration.UtilDate;
+import domain.Sale;
 import exceptions.InvalidFieldException;
 import exceptions.InvalidPriceException;
 
@@ -50,6 +51,11 @@ public class CreateSaleGUI extends JFrame {
 	private JLabel jLabelProductStatus = new JLabel(ResourceBundle.getBundle("Etiquetas").getString("CreateSaleGUI.Status"));
 	private JLabel jLabelPrice = new JLabel(ResourceBundle.getBundle("Etiquetas").getString("CreateSaleGUI.Price"));
 	private JTextField jTextFieldPrice = new JTextField();
+	private JLabel jLabelCategory = new JLabel("Categoria");
+	private JComboBox<String> jComboBoxCategory = new JComboBox<String>();
+	private DefaultComboBoxModel<String> categoryOptions = new DefaultComboBoxModel<String>();
+	private JButton btnSuggestCategory = new JButton("Sugerir categoria");
+	private JButton btnProposeCategory = new JButton("Proponer categoria");
 
 	private JCalendar jCalendar = new JCalendar();
 	private Calendar calendarAct = null;
@@ -74,7 +80,7 @@ public class CreateSaleGUI extends JFrame {
 		thisFrame=this;
 		this.sellerMail=mail;
 		this.getContentPane().setLayout(null);
-		this.setSize(new Dimension(604, 370));
+		this.setSize(new Dimension(640, 430));
 		this.setTitle(ResourceBundle.getBundle("Etiquetas").getString("CreateSaleGUI.CreateProduct"));
 
 		jLabelTitle.setBounds(new Rectangle(6, 24, 92, 20));
@@ -86,7 +92,7 @@ public class CreateSaleGUI extends JFrame {
 		scrollPaneEvents.setBounds(new Rectangle(25, 44, 346, 116));
 		jButtonCreate.setFont(new Font("Lucida Grande", Font.BOLD, 15));
 
-		jButtonCreate.setBounds(new Rectangle(100, 222, 216, 41));
+		jButtonCreate.setBounds(new Rectangle(80, 258, 216, 41));
 
 		jButtonCreate.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
@@ -100,7 +106,12 @@ public class CreateSaleGUI extends JFrame {
 						float price = Float.parseFloat(jTextFieldPrice.getText());
 						String s=(String)jComboBoxStatus.getSelectedItem();
 						int numStatus=status.indexOf(s);
-						facade.createSale(fieldTitle.getText(), fieldDescription.getText(), numStatus, price,  UtilDate.trim(jCalendar.getDate()), sellerMail, targetFile);
+						Sale created = facade.createSale(fieldTitle.getText(), fieldDescription.getText(), numStatus, price,
+								UtilDate.trim(jCalendar.getDate()), sellerMail, targetFile);
+						String selectedCategory = (String) jComboBoxCategory.getSelectedItem();
+						if (created != null && selectedCategory != null && !selectedCategory.trim().isEmpty()) {
+							facade.assignCategoryToSale(created.getSaleNumber(), selectedCategory);
+						}
 						jLabelMsg.setText(ResourceBundle.getBundle("Etiquetas").getString("CreateSaleGUI.ProductCreated"));
 					
 					} catch (Exception e1) {
@@ -110,16 +121,16 @@ public class CreateSaleGUI extends JFrame {
 					}
 			}
 		});
-		jButtonClose.setBounds(new Rectangle(328, 228, 101, 30));
+		jButtonClose.setBounds(new Rectangle(310, 265, 130, 30));
 		jButtonClose.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				thisFrame.setVisible(false);			}
 		});
 
-		jLabelMsg.setBounds(new Rectangle(26, 275, 377, 20));
+		jLabelMsg.setBounds(new Rectangle(26, 314, 560, 20));
 		jLabelMsg.setForeground(Color.red);
 
-		jLabelError.setBounds(new Rectangle(16, 275, 384, 20));
+		jLabelError.setBounds(new Rectangle(16, 335, 560, 20));
 		jLabelError.setForeground(Color.red);
 		
 	    status=Utils.getStatus();
@@ -139,6 +150,41 @@ public class CreateSaleGUI extends JFrame {
 		jLabelProductStatus.setBounds(new Rectangle(40, 15, 140, 25));
 		jLabelProductStatus.setBounds(6, 185, 140, 25);
 		getContentPane().add(jLabelProductStatus);
+
+		jLabelCategory.setBounds(220, 185, 90, 25);
+		getContentPane().add(jLabelCategory);
+
+		jComboBoxCategory.setModel(categoryOptions);
+		jComboBoxCategory.setBounds(300, 185, 170, 27);
+		getContentPane().add(jComboBoxCategory);
+
+		btnSuggestCategory.setBounds(220, 220, 170, 26);
+		btnSuggestCategory.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				BLFacade facade = MainGUI.getBusinessLogic();
+				List<String> suggestions = facade.suggestCategories(fieldTitle.getText(), fieldDescription.getText());
+				if (!suggestions.isEmpty()) {
+					jComboBoxCategory.setSelectedItem(suggestions.get(0));
+					jLabelMsg.setText("Sugerencia IA: " + suggestions.get(0));
+				}
+			}
+		});
+		getContentPane().add(btnSuggestCategory);
+
+		btnProposeCategory.setBounds(400, 220, 170, 26);
+		btnProposeCategory.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				String proposed = JOptionPane.showInputDialog(thisFrame, "Nueva categoria:");
+				if (proposed == null || proposed.trim().isEmpty()) {
+					return;
+				}
+				BLFacade facade = MainGUI.getBusinessLogic();
+				facade.proposeCategory(proposed, sellerMail);
+				loadCategories();
+				jLabelMsg.setText("Categoria propuesta para revision");
+			}
+		});
+		getContentPane().add(btnProposeCategory);
 		
 		jLabelDescription.setBounds(6, 56, 109, 16);
 		getContentPane().add(jLabelDescription);
@@ -156,6 +202,7 @@ public class CreateSaleGUI extends JFrame {
 		jComboBoxStatus.setModel(statusOptions);
 		jComboBoxStatus.setBounds(90, 183, 114, 27);
 		getContentPane().add(jComboBoxStatus);
+		loadCategories();
 		
 		JButton btnNewButton = new JButton(ResourceBundle.getBundle("Etiquetas").getString("CreateSaleGUI.LoadPicture")); //$NON-NLS-1$ //$NON-NLS-2$
 		btnNewButton.addActionListener(new ActionListener() {
@@ -195,6 +242,10 @@ public class CreateSaleGUI extends JFrame {
 		
 		btnNewButton_2.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
+				if (targetFile == null) {
+					jLabelMsg.setText("Selecciona una imagen antes de guardarla");
+					return;
+				}
 			
 				try {
 					BufferedImage img = ImageIO.read(targetFile);
@@ -209,7 +260,7 @@ public class CreateSaleGUI extends JFrame {
 				
 			}
 		});
-		btnNewButton_2.setBounds(137, 350, 117, 29);
+		btnNewButton_2.setBounds(460, 300, 124, 29);
 		
 		getContentPane().add(btnNewButton_2);
 		
@@ -254,6 +305,18 @@ public class CreateSaleGUI extends JFrame {
 				}}});
 		
 	}	 
+
+	private void loadCategories() {
+		categoryOptions.removeAllElements();
+		BLFacade facade = MainGUI.getBusinessLogic();
+		List<String> categories = facade.getAllCategories();
+		for (String category : categories) {
+			categoryOptions.addElement(category);
+		}
+		if (categoryOptions.getSize() == 0) {
+			categoryOptions.addElement("General");
+		}
+	}
 
 	public BufferedImage rescale(BufferedImage originalImage)
     {

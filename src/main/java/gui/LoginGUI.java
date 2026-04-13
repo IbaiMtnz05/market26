@@ -29,6 +29,10 @@ import domain.User;
  * Allows users to login to the marketplace system or navigate to registration.
  */
 public class LoginGUI extends JFrame {
+    private static final Color BG = new Color(21, 24, 30);
+    private static final Color CARD = new Color(31, 35, 43);
+    private static final Color TEXT = new Color(232, 236, 242);
+
     private JTextField txtEmail;
     private JPasswordField txtPassword;
     private JButton btnLogin;
@@ -44,25 +48,26 @@ public class LoginGUI extends JFrame {
      */
     public LoginGUI() {
         setTitle(I18n.t("LoginGUI.Title"));
-        setSize(460, 320);
+        setSize(500, 350);
         setLocationRelativeTo(null);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
         JPanel mainPanel = new JPanel(new BorderLayout(10, 10));
-        mainPanel.setBackground(new Color(245, 247, 250));
+        mainPanel.setBackground(BG);
         mainPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
 
         // Panel superior con título e idioma
         JPanel topPanel = new JPanel(new BorderLayout(5, 5));
-        topPanel.setOpaque(false);
+        topPanel.setBackground(CARD);
         
         lblTitle = new JLabel(I18n.t("LoginGUI.AppTitle"), SwingConstants.CENTER);
-        lblTitle.setFont(new Font("Segoe UI", Font.BOLD, 24));
+        lblTitle.setFont(new Font("Dialog", Font.BOLD, 24));
+        lblTitle.setForeground(TEXT);
         topPanel.add(lblTitle, BorderLayout.CENTER);
         
         // Selector de idioma
         JPanel languagePanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        languagePanel.setOpaque(false);
+        languagePanel.setBackground(CARD);
         cmbLanguage = new JComboBox<>(new String[]{"Español", "English", "Euskera"});
         cmbLanguage.setSelectedIndex(0);
         languagePanel.add(cmbLanguage);
@@ -71,39 +76,42 @@ public class LoginGUI extends JFrame {
         mainPanel.add(topPanel, BorderLayout.NORTH);
 
         JPanel panel = new JPanel(new GridLayout(4, 2, 10, 12));
-        panel.setOpaque(false);
+        panel.setBackground(CARD);
+        panel.setBorder(BorderFactory.createEmptyBorder(12, 12, 12, 12));
         
         // Email
         lblEmail = new JLabel(I18n.t("LoginGUI.Email"));
-        lblEmail.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        lblEmail.setFont(new Font("Dialog", Font.PLAIN, 14));
+        lblEmail.setForeground(TEXT);
         panel.add(lblEmail);
         txtEmail = new JTextField();
-        txtEmail.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        txtEmail.setFont(new Font("Dialog", Font.PLAIN, 14));
         panel.add(txtEmail);
         
         // Password
         lblPassword = new JLabel(I18n.t("LoginGUI.Password"));
-        lblPassword.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        lblPassword.setFont(new Font("Dialog", Font.PLAIN, 14));
+        lblPassword.setForeground(TEXT);
         panel.add(lblPassword);
         txtPassword = new JPasswordField();
-        txtPassword.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        txtPassword.setFont(new Font("Dialog", Font.PLAIN, 14));
         panel.add(txtPassword);
         
         // Botón Login
         panel.add(new JLabel(""));
         btnLogin = new JButton(I18n.t("LoginGUI.Login"));
-        btnLogin.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        btnLogin.setFont(new Font("Dialog", Font.BOLD, 14));
         panel.add(btnLogin);
         
         // Botón Registro
         panel.add(new JLabel(""));
         btnRegister = new JButton(I18n.t("LoginGUI.Register"));
-        btnRegister.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        btnRegister.setFont(new Font("Dialog", Font.BOLD, 14));
         panel.add(btnRegister);
         
         // Mensaje
         lblMessage = new JLabel("", SwingConstants.CENTER);
-        lblMessage.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        lblMessage.setFont(new Font("Dialog", Font.PLAIN, 13));
         lblMessage.setForeground(Color.RED);
         
         mainPanel.add(panel, BorderLayout.CENTER);
