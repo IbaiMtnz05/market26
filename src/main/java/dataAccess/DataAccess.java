@@ -6,10 +6,12 @@ import java.io.File;
 import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.ResourceBundle;
 
 import javax.imageio.ImageIO;
@@ -184,6 +186,7 @@ public class DataAccess  {
 			}
 
 			Sale sale = seller.addSale(title, description, status, price, pubDate, file);
+			sale.setCategory(inferCategory(title, description));
 			db.persist(sale);
 			db.getTransaction().commit();
 			return sale;
@@ -1031,6 +1034,227 @@ public class DataAccess  {
 	    } catch (PersistenceException e) {
 	        return false;
 	    }
+	}
+
+	public List<String> getApprovedCategories() {
+		TypedQuery<CategoryDefinition> query = db.createQuery(
+			"SELECT c FROM CategoryDefinition c WHERE c.approved = true ORDER BY c.name",
+			CategoryDefinition.class);
+		List<CategoryDefinition> categories = query.getResultList();
+		List<String> result = new ArrayList<String>();
+		for (CategoryDefinition category : categories) {
+			result.add(category.getName());
+		}
+		return result;
+	}
+
+	public List<String> getPendingCategoryProposals() {
+		TypedQuery<CategoryDefinition> query = db.createQuery(
+			"SELECT c FROM CategoryDefinition c WHERE c.approved = false ORDER BY c.createdAt",
+			CategoryDefinition.class);
+		List<CategoryDefinition> categories = query.getResultList();
+		List<String> result = new ArrayList<String>();
+		for (CategoryDefinition category : categories) {
+			result.add(category.getName());
+		}
+		return result;
+	}
+
+	public void proposeCategory(String category, String proposerEmail) {
+		String normalized = normalizeCategory(category);
+		if (normalized.isEmpty()) {
+			return;
+		}
+		db.getTransaction().begin();
+		try {
+			CategoryDefinition existing = db.find(CategoryDefinition.class, normalized);
+			if (existing == null) {
+				db.persist(new CategoryDefinition(normalized, false, proposerEmail));
+			}
+			db.getTransaction().commit();
+		} catch (RuntimeException e) {
+			if (db.getTransaction().isActive()) {
+				db.getTransaction().rollback();
+			}
+			throw e;
+		}
+	}
+
+	public void approveCategory(String category) {
+		String normalized = normalizeCategory(category);
+		if (normalized.isEmpty()) {
+			return;
+		}
+		db.getTransaction().begin();
+		try {
+			CategoryDefinition existing = db.find(CategoryDefinition.class, normalized);
+			if (existing == null) {
+				db.persist(new CategoryDefinition(normalized, true, "system"));
+			} else {
+				existing.setApproved(true);
+				db.merge(existing);
+			}
+			db.getTransaction().commit();
+		} catch (RuntimeException e) {
+			if (db.getTransaction().isActive()) {
+				db.getTransaction().rollback();
+			}
+			throw e;
+		}
+	}
+
+	public void assignCategoryToSale(Integer saleNumber, String category) {
+		if (saleNumber == null) {
+			return;
+		}
+		String normalized = normalizeCategory(category);
+		if (normalized.isEmpty()) {
+			return;
+		}
+		db.getTransaction().begin();
+		try {
+			Sale sale = db.find(Sale.class, saleNumber);
+			if (sale != null) {
+				sale.setCategory(normalized);
+				db.merge(sale);
+			}
+			CategoryDefinition existing = db.find(CategoryDefinition.class, normalized);
+			if (existing == null) {
+				db.persist(new CategoryDefinition(normalized, true, "system"));
+			}
+			db.getTransaction().commit();
+		} catch (RuntimeException e) {
+			if (db.getTransaction().isActive()) {
+				db.getTransaction().rollback();
+			}
+			throw e;
+		}
+	}
+
+	public int seedDemoSalesIfNeeded() {
+		long current;
+		try {
+			TypedQuery<Long> countQuery = db.createQuery("SELECT COUNT(s) FROM Sale s", Long.class);
+			current = countQuery.getSingleResult();
+		} catch (PersistenceException e) {
+			// In a fresh ObjectDB file the entity metadata may not exist yet.
+			// Treat this as an empty dataset so demo seeding can bootstrap it.
+			current = 0L;
+		}
+		int target = 20;
+		if (current >= target) {
+			db.getTransaction().begin();
+			try {
+				ensureDefaultCategoriesPersisted();
+				db.getTransaction().commit();
+			} catch (RuntimeException e) {
+				if (db.getTransaction().isActive()) {
+					db.getTransaction().rollback();
+				}
+				throw e;
+			}
+			return 0;
+		}
+
+		Seller seller = db.find(Seller.class, "seller3@gmail.com");
+		if (seller == null) {
+			db.getTransaction().begin();
+			seller = new Seller("seller3@gmail.com", "Demo Seller", "ES93 1111 2222 3333 4444 5555");
+			seller.setPassword("pass3");
+			db.persist(seller);
+			db.getTransaction().commit();
+		}
+
+		List<String> titles = Arrays.asList(
+			"iPhone 15 128GB", "Portatil Lenovo ThinkPad", "Monitor LG 27 pulgadas", "Teclado mecanico RGB",
+			"Bicicleta MTB 29", "Balon futbol Adidas", "Raqueta padel Bullpadel", "Botas trekking Salomon",
+			"Sofa 3 plazas gris", "Lampara escritorio LED", "Mesa comedor roble", "Silla ergonomica oficina",
+			"Chaqueta vaquera", "Zapatillas running Nike", "Vestido verano azul", "Camisa lino blanca",
+			"Casco moto integral", "Llantas aleacion 17", "Figura coleccion anime", "Vinilo clasicos rock"
+		);
+		List<String> descs = Arrays.asList(
+			"Muy cuidado, funciona perfecto", "Estado excelente, bateria con buena salud", "Poco uso y sin golpes",
+			"Ideal para uso diario y trabajo", "Con accesorios originales"
+		);
+		Random random = new Random(26);
+		int created = 0;
+
+		db.getTransaction().begin();
+		try {
+			for (int i = (int) current; i < target; i++) {
+				String title = titles.get(i % titles.size()) + " #" + (i + 1);
+				if (seller.doesSaleExist(title)) {
+					continue;
+				}
+				float price = 20f + random.nextInt(780);
+				String desc = descs.get(random.nextInt(descs.size()));
+				Sale sale = seller.addSale(title, desc, 2, price, UtilDate.trim(new Date()), null);
+				sale.setCategory(inferCategory(title, desc));
+				db.persist(sale);
+				created++;
+			}
+			db.merge(seller);
+			ensureDefaultCategoriesPersisted();
+			db.getTransaction().commit();
+		} catch (RuntimeException e) {
+			if (db.getTransaction().isActive()) {
+				db.getTransaction().rollback();
+			}
+			throw e;
+		}
+		return created;
+	}
+
+	private void ensureDefaultCategoriesPersisted() {
+		for (String category : Arrays.asList("Tecnologia", "Hogar", "Deporte", "Moda", "Motor", "Coleccionismo", "General")) {
+			CategoryDefinition existing = db.find(CategoryDefinition.class, category);
+			if (existing == null) {
+				db.persist(new CategoryDefinition(category, true, "system"));
+			}
+		}
+	}
+
+	private String normalizeCategory(String category) {
+		if (category == null) {
+			return "";
+		}
+		String value = category.trim();
+		if (value.isEmpty()) {
+			return "";
+		}
+		return value.substring(0, 1).toUpperCase() + value.substring(1).toLowerCase();
+	}
+
+	private String inferCategory(String title, String description) {
+		String text = ((title == null ? "" : title) + " " + (description == null ? "" : description)).toLowerCase();
+		if (containsAny(text, "iphone", "android", "pc", "portatil", "tablet", "teclado", "monitor")) {
+			return "Tecnologia";
+		}
+		if (containsAny(text, "bici", "bicicleta", "botas", "futbol", "deporte", "raqueta", "trekking", "padel")) {
+			return "Deporte";
+		}
+		if (containsAny(text, "camisa", "zapatillas", "chaqueta", "moda", "vestido")) {
+			return "Moda";
+		}
+		if (containsAny(text, "coche", "moto", "motor", "casco", "llanta")) {
+			return "Motor";
+		}
+		if (containsAny(text, "silla", "mesa", "sofa", "lampara", "hogar", "comedor")) {
+			return "Hogar";
+		}
+		if (containsAny(text, "coleccion", "cromo", "figura", "vinilo")) {
+			return "Coleccionismo";
+		}
+		return "General";
+	}
+
+	private boolean containsAny(String text, String... words) {
+		for (String word : words) {
+			if (text.contains(word)) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 

@@ -239,4 +239,44 @@ public interface BLFacade  {
                                                     float importeReembolso, String motivo,
                                                     String observaciones) 
                                                     throws IllegalStateException;
+
+	@WebMethod
+	public List<String> getAllCategories();
+
+	@WebMethod
+	public List<String> getPendingCategoryProposals();
+
+	@WebMethod
+	public List<String> suggestCategories(String title, String description);
+
+	@WebMethod
+	public void proposeCategory(String category, String proposerEmail);
+
+	@WebMethod
+	public void approveCategory(String category);
+
+	@WebMethod
+	public void assignCategoryToSale(Integer saleNumber, String category);
+
+	@WebMethod
+	public String getCategoryForSale(Integer saleNumber);
+
+	@WebMethod
+	public List<Sale> getPersonalizedFeed(String buyerEmail, int limit);
+
+	@WebMethod
+	public float getRecommendationScore(String buyerEmail, Integer saleNumber);
+
+	@WebMethod
+	public String getRecommendationReason(String buyerEmail, Integer saleNumber);
+
+	@WebMethod
+	public List<Sale> getOpportunityAlerts(String buyerEmail, String category,
+										   String keyword, Float maxPrice, int limit);
+
+	@WebMethod
+	public String getOpportunityReason(String buyerEmail, Integer saleNumber);
+
+	@WebMethod
+	public int seedDemoSalesIfNeeded();
 }

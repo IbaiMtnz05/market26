@@ -3,7 +3,6 @@ package gui;
 import java.net.URL;
 import java.util.Locale;
 
-import javax.swing.UIManager;
 import javax.xml.namespace.QName;
 import javax.xml.ws.Service;
 
@@ -28,7 +27,7 @@ public class ApplicationLauncher {
 		try {
 			
 			BLFacade appFacadeInterface;
-			UIManager.setLookAndFeel("javax.swing.plaf.metal.MetalLookAndFeel");
+			ThemeManager.applyDarkTheme();
 			
 			if (c.isBusinessLogicLocal()) {
 				DataAccess da= new DataAccess();
@@ -50,6 +49,8 @@ public class ApplicationLauncher {
 			} 
 			
 			MainGUI.setBussinessLogic(appFacadeInterface);
+			int seeded = appFacadeInterface.seedDemoSalesIfNeeded();
+			System.out.println("Demo sales creadas en arranque: " + seeded);
 			
 			// Abrir LoginGUI como pantalla inicial
 			LoginGUI loginGUI = new LoginGUI();

@@ -3,8 +3,13 @@ import java.awt.Image;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import javax.imageio.ImageIO;
 import javax.jws.WebMethod;
@@ -39,6 +44,10 @@ public class BLFacadeImplementation  implements BLFacade {
 	 private static final int baseSize = 160;
 
 		private static final String basePath="src/main/resources/images/";
+
+	private final Map<String, Map<Integer, Float>> lastFeedScores = new HashMap<String, Map<Integer, Float>>();
+	private final Map<String, Map<Integer, String>> lastFeedReasons = new HashMap<String, Map<Integer, String>>();
+	private final Map<String, Map<Integer, String>> lastAlertReasons = new HashMap<String, Map<Integer, String>>();
 	DataAccess dbManager;
 
 	private interface DbAction<T> {
@@ -357,6 +366,352 @@ public class BLFacadeImplementation  implements BLFacade {
         dbManager.close();
     }
 }
+
+	@WebMethod
+	public synchronized List<String> getAllCategories() {
+		return execute(() -> dbManager.getApprovedCategories());
+	}
+
+	@WebMethod
+	public synchronized List<String> getPendingCategoryProposals() {
+		return execute(() -> dbManager.getPendingCategoryProposals());
+	}
+
+	@WebMethod
+	public synchronized List<String> suggestCategories(String title, String description) {
+		List<String> suggestions = new ArrayList<String>();
+		String inferred = inferCategory(title, description);
+		suggestions.add(inferred);
+		for (String category : getAllCategories()) {
+			if (category.equalsIgnoreCase(inferred)) {
+				continue;
+			}
+			if (matchesCategoryKeywords(category, title, description)) {
+				if (!suggestions.contains(category)) {
+					suggestions.add(category);
+				}
+			}
+			if (suggestions.size() >= 3) {
+				break;
+			}
+		}
+		return suggestions;
+	}
+
+	@WebMethod
+	public synchronized void proposeCategory(String category, String proposerEmail) {
+		execute(() -> {
+			dbManager.proposeCategory(category, proposerEmail);
+			return null;
+		});
+	}
+
+	@WebMethod
+	public synchronized void approveCategory(String category) {
+		execute(() -> {
+			dbManager.approveCategory(category);
+			return null;
+		});
+	}
+
+	@WebMethod
+	public synchronized void assignCategoryToSale(Integer saleNumber, String category) {
+		execute(() -> {
+			dbManager.assignCategoryToSale(saleNumber, category);
+			return null;
+		});
+	}
+
+	@WebMethod
+	public synchronized String getCategoryForSale(Integer saleNumber) {
+		if (saleNumber == null) {
+			return "General";
+		}
+		Sale sale = execute(() -> dbManager.findSale(saleNumber));
+		if (sale == null) {
+			return "General";
+		}
+		if (sale.getCategory() != null && !sale.getCategory().trim().isEmpty()) {
+			return sale.getCategory();
+		}
+		String inferred = inferCategory(sale.getTitle(), sale.getDescription());
+		assignCategoryToSale(saleNumber, inferred);
+		return inferred;
+	}
+
+	@WebMethod
+	public int seedDemoSalesIfNeeded() {
+		return execute(() -> dbManager.seedDemoSalesIfNeeded());
+	}
+
+	@WebMethod
+	public synchronized List<Sale> getPersonalizedFeed(String buyerEmail, int limit) {
+		List<Sale> sales = execute(() -> dbManager.getAvailableSalesForBuyer(new Date()));
+		if (sales == null || sales.isEmpty()) {
+			lastFeedScores.put(buyerEmail, new HashMap<Integer, Float>());
+			lastFeedReasons.put(buyerEmail, new HashMap<Integer, String>());
+			return new ArrayList<Sale>();
+		}
+
+		Map<Integer, Float> scores = new HashMap<Integer, Float>();
+		Map<Integer, String> reasons = new HashMap<Integer, String>();
+		Map<String, Integer> preferredCategories = getBuyerPreferredCategories(buyerEmail);
+		float targetPrice = getBuyerTargetPrice(buyerEmail, sales);
+		Map<Integer, Integer> popularity = getSalesPopularity();
+		int maxPopularity = 1;
+		for (Integer value : popularity.values()) {
+			if (value != null && value > maxPopularity) {
+				maxPopularity = value;
+			}
+		}
+
+		for (Sale sale : sales) {
+			String category = getCategoryForSale(sale.getSaleNumber());
+			float categoryScore = computeCategoryScore(category, preferredCategories);
+			float priceScore = computePriceScore(sale.getPrice(), targetPrice);
+			float freshnessScore = computeFreshnessScore(sale.getPublicationDate());
+			float popularityScore = (float) popularity.getOrDefault(sale.getSaleNumber(), 0) / (float) maxPopularity;
+			float finalScore = 0.45f * categoryScore + 0.25f * priceScore +
+				0.20f * freshnessScore + 0.10f * popularityScore;
+			scores.put(sale.getSaleNumber(), finalScore);
+			reasons.put(sale.getSaleNumber(), buildReason(categoryScore, priceScore, freshnessScore, category));
+		}
+
+		Collections.sort(sales, new Comparator<Sale>() {
+			public int compare(Sale a, Sale b) {
+				Float sa = scores.getOrDefault(a.getSaleNumber(), 0f);
+				Float sb = scores.getOrDefault(b.getSaleNumber(), 0f);
+				return sb.compareTo(sa);
+			}
+		});
+
+		if (limit > 0 && sales.size() > limit) {
+			sales = new ArrayList<Sale>(sales.subList(0, limit));
+		}
+		lastFeedScores.put(buyerEmail, scores);
+		lastFeedReasons.put(buyerEmail, reasons);
+		return sales;
+	}
+
+	@WebMethod
+	public synchronized float getRecommendationScore(String buyerEmail, Integer saleNumber) {
+		Map<Integer, Float> scoreMap = lastFeedScores.getOrDefault(buyerEmail, Collections.<Integer, Float>emptyMap());
+		if (!scoreMap.containsKey(saleNumber)) {
+			getPersonalizedFeed(buyerEmail, 20);
+			scoreMap = lastFeedScores.getOrDefault(buyerEmail, Collections.<Integer, Float>emptyMap());
+		}
+		return scoreMap.getOrDefault(saleNumber, 0f);
+	}
+
+	@WebMethod
+	public synchronized String getRecommendationReason(String buyerEmail, Integer saleNumber) {
+		Map<Integer, String> reasonMap = lastFeedReasons.getOrDefault(buyerEmail, Collections.<Integer, String>emptyMap());
+		if (!reasonMap.containsKey(saleNumber)) {
+			getPersonalizedFeed(buyerEmail, 20);
+			reasonMap = lastFeedReasons.getOrDefault(buyerEmail, Collections.<Integer, String>emptyMap());
+		}
+		return reasonMap.getOrDefault(saleNumber, "Recomendacion general por actividad reciente");
+	}
+
+	@WebMethod
+	public synchronized List<Sale> getOpportunityAlerts(String buyerEmail, String category,
+			String keyword, Float maxPrice, int limit) {
+		List<Sale> ranked = getPersonalizedFeed(buyerEmail, 0);
+		Map<Integer, String> reasons = new HashMap<Integer, String>();
+		List<Sale> filtered = new ArrayList<Sale>();
+		String requestedCategory = normalizeCategory(category);
+		String requestedKeyword = keyword == null ? "" : keyword.trim().toLowerCase();
+		float buyerTargetPrice = getBuyerTargetPrice(buyerEmail, ranked);
+
+		for (Sale sale : ranked) {
+			String saleCategoryName = getCategoryForSale(sale.getSaleNumber());
+			if (!requestedCategory.isEmpty() && !saleCategoryName.equalsIgnoreCase(requestedCategory)) {
+				continue;
+			}
+			if (!requestedKeyword.isEmpty()) {
+				String text = (sale.getTitle() + " " + sale.getDescription()).toLowerCase();
+				if (!text.contains(requestedKeyword)) {
+					continue;
+				}
+			}
+			if (maxPrice != null && maxPrice > 0 && sale.getPrice() > maxPrice) {
+				continue;
+			}
+
+			float score = getRecommendationScore(buyerEmail, sale.getSaleNumber());
+			boolean greatPrice = buyerTargetPrice > 0 && sale.getPrice() <= buyerTargetPrice * 0.85f;
+			if (score >= 0.55f || greatPrice) {
+				filtered.add(sale);
+				if (greatPrice) {
+					reasons.put(sale.getSaleNumber(), "Precio muy competitivo respecto a tu historico");
+				} else {
+					reasons.put(sale.getSaleNumber(), "Alta afinidad segun ranking IA del feed");
+				}
+			}
+		}
+
+		if (limit > 0 && filtered.size() > limit) {
+			filtered = new ArrayList<Sale>(filtered.subList(0, limit));
+		}
+		lastAlertReasons.put(buyerEmail, reasons);
+		return filtered;
+	}
+
+	@WebMethod
+	public synchronized String getOpportunityReason(String buyerEmail, Integer saleNumber) {
+		Map<Integer, String> reasonMap = lastAlertReasons.getOrDefault(buyerEmail, Collections.<Integer, String>emptyMap());
+		return reasonMap.getOrDefault(saleNumber, "Coincidencia con tus reglas y preferencias");
+	}
+
+	private String normalizeCategory(String category) {
+		if (category == null) {
+			return "";
+		}
+		String value = category.trim();
+		if (value.isEmpty()) {
+			return "";
+		}
+		return value.substring(0, 1).toUpperCase() + value.substring(1).toLowerCase();
+	}
+
+	private String inferCategory(String title, String description) {
+		String text = ((title == null ? "" : title) + " " + (description == null ? "" : description)).toLowerCase();
+		if (containsAny(text, "iphone", "android", "pc", "portatil", "tablet", "teclado", "monitor")) {
+			return "Tecnologia";
+		}
+		if (containsAny(text, "bici", "bicicleta", "botas", "futbol", "deporte", "raqueta", "montana")) {
+			return "Deporte";
+		}
+		if (containsAny(text, "camisa", "zapatillas", "chaqueta", "moda", "vestido")) {
+			return "Moda";
+		}
+		if (containsAny(text, "coche", "moto", "motor", "casco", "llanta")) {
+			return "Motor";
+		}
+		if (containsAny(text, "silla", "mesa", "sofa", "lampara", "hogar", "cocina")) {
+			return "Hogar";
+		}
+		if (containsAny(text, "coleccion", "cromo", "figura", "vinilo")) {
+			return "Coleccionismo";
+		}
+		return "General";
+	}
+
+	private boolean matchesCategoryKeywords(String category, String title, String description) {
+		String inferred = inferCategory(title, description);
+		return category != null && category.equalsIgnoreCase(inferred);
+	}
+
+	private boolean containsAny(String text, String... words) {
+		for (String word : words) {
+			if (text.contains(word)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	private Map<String, Integer> getBuyerPreferredCategories(String buyerEmail) {
+		Map<String, Integer> preferred = new HashMap<String, Integer>();
+		if (buyerEmail == null || buyerEmail.trim().isEmpty()) {
+			return preferred;
+		}
+		List<AcceptedOffer> offers = execute(() -> dbManager.getAcceptedOffersByBuyer(buyerEmail));
+		for (AcceptedOffer offer : offers) {
+			if (offer == null || offer.getSale() == null) {
+				continue;
+			}
+			String category = getCategoryForSale(offer.getSale().getSaleNumber());
+			preferred.put(category, preferred.getOrDefault(category, 0) + 1);
+		}
+		return preferred;
+	}
+
+	private float getBuyerTargetPrice(String buyerEmail, List<Sale> fallbackSales) {
+		if (buyerEmail != null && !buyerEmail.trim().isEmpty()) {
+			List<AcceptedOffer> offers = execute(() -> dbManager.getAcceptedOffersByBuyer(buyerEmail));
+			if (offers != null && !offers.isEmpty()) {
+				float sum = 0f;
+				int count = 0;
+				for (AcceptedOffer offer : offers) {
+					if (offer == null || offer.getFinalPrice() == null) {
+						continue;
+					}
+					sum += offer.getFinalPrice();
+					count++;
+				}
+				if (count > 0) {
+					return sum / count;
+				}
+			}
+		}
+		if (fallbackSales == null || fallbackSales.isEmpty()) {
+			return 100f;
+		}
+		float sum = 0f;
+		for (Sale sale : fallbackSales) {
+			sum += sale.getPrice();
+		}
+		return sum / fallbackSales.size();
+	}
+
+	private Map<Integer, Integer> getSalesPopularity() {
+		Map<Integer, Integer> popularity = new HashMap<Integer, Integer>();
+		List<Sale> allSales = execute(() -> dbManager.getSales(""));
+		for (Sale sale : allSales) {
+			popularity.put(sale.getSaleNumber(), 0);
+		}
+		for (Sale sale : allSales) {
+			Integer saleNumber = sale.getSaleNumber();
+			List<AcceptedOffer> offers = execute(() -> dbManager.getAcceptedOffersBySeller(sale.getSeller().getEmail()));
+			int count = 0;
+			for (AcceptedOffer offer : offers) {
+				if (offer.getSale() != null && saleNumber.equals(offer.getSale().getSaleNumber())) {
+					count++;
+				}
+			}
+			popularity.put(saleNumber, count);
+		}
+		return popularity;
+	}
+
+	private float computeCategoryScore(String category, Map<String, Integer> preferredCategories) {
+		if (preferredCategories.isEmpty()) {
+			return "General".equalsIgnoreCase(category) ? 0.45f : 0.7f;
+		}
+		if (preferredCategories.containsKey(category)) {
+			int max = Collections.max(preferredCategories.values());
+			return 0.5f + 0.5f * (preferredCategories.get(category) / (float) Math.max(1, max));
+		}
+		return 0.2f;
+	}
+
+	private float computePriceScore(float price, float targetPrice) {
+		float distance = Math.abs(price - targetPrice);
+		return Math.max(0f, 1f - (distance / (targetPrice + 1f)));
+	}
+
+	private float computeFreshnessScore(Date publicationDate) {
+		if (publicationDate == null) {
+			return 0.3f;
+		}
+		long millisDiff = Math.max(0L, new Date().getTime() - publicationDate.getTime());
+		long days = millisDiff / (1000L * 60L * 60L * 24L);
+		return Math.max(0.2f, 1f - Math.min(days, 30L) / 30f);
+	}
+
+	private String buildReason(float categoryScore, float priceScore, float freshnessScore, String category) {
+		if (categoryScore >= 0.8f) {
+			return "Muy alineado con tus categorias preferidas: " + category;
+		}
+		if (priceScore >= 0.75f) {
+			return "Precio ajustado a tu rango habitual";
+		}
+		if (freshnessScore >= 0.8f) {
+			return "Publicacion reciente con buena visibilidad";
+		}
+		return "Buena combinacion general para tu perfil";
+	}
 
 	
 }
