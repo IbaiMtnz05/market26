@@ -3,12 +3,16 @@ import java.awt.Image;
 import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -392,6 +396,9 @@ public class BLFacadeImplementation  implements BLFacade {
 		String aiSuggestion = callMistralCategorySuggestion(title, description, getAllCategories());
 		if (aiSuggestion != null && !aiSuggestion.trim().isEmpty()) {
 			inferred = aiSuggestion;
+			logAiSuggestionSource("API", inferred);
+		} else {
+			logAiSuggestionSource("FALLBACK", inferred);
 		}
 		suggestions.add(inferred);
 		for (String category : getAllCategories()) {
@@ -410,24 +417,32 @@ public class BLFacadeImplementation  implements BLFacade {
 		return suggestions;
 	}
 
+	private void logAiSuggestionSource(String source, String category) {
+		String safeCategory = category == null ? "" : category;
+		System.out.println("[AI-SUGGESTION] source=" + source + " category=" + safeCategory);
+	}
+
 	private String callMistralCategorySuggestion(String title, String description, List<String> categories) {
-		// Para probarlo de manera menos segura, sin complicaciones de path, te dejo una API KEY
-		String apiKey = System.getenv("MISTRAL_API"); // Comentar
-		//String apiKey = "PASTE HERE"; // Desconmentar
+		String apiKey = getEnvOrDotEnv("MISTRAL_API");
 		if (apiKey == null || apiKey.trim().isEmpty()) {
 			return null;
 		}
 		if (categories == null || categories.isEmpty()) {
+			System.out.println("[AI-SUGGESTION] api=SKIP reason=NO_CATEGORIES");
 			return null;
 		}
+		System.out.println("[AI-SUGGESTION] api=CALL categories=" + categories.size());
 
-		String prompt = "Devuelve solo el nombre de la categoria mas adecuada, sin comillas. " +
-			"Si ninguna encaja, puedes sugerir una categoria nueva. " +
-			"Categorias existentes: " + String.join(", ", categories) + ". " +
-			"Titulo: " + (title == null ? "" : title) + ". " +
-			"Descripcion: " + (description == null ? "" : description) + ".";
+		String prompt = "Actúa como un clasificador de contenido estricto. " +
+		"Tu tarea es asignar la categoría más precisa.\n" +
+		"Categorías existentes: " + String.join(", ", categories) + ".\n" +
+		"REGLA CRÍTICA: NO fuerces el texto en una categoría existente si no es una coincidencia perfecta. " +
+		"Si ninguna categoría de la lista describe el contenido con total exactitud, es tu OBLIGACIÓN crear y sugerir una categoría nueva más adecuada.\n\n" +
+		"Título: " + (title == null ? "" : title) + "\n" +
+		"Descripción: " + (description == null ? "" : description) + "\n\n" +
+		"Devuelve únicamente el nombre de la categoría final (existente o nueva), sin comillas ni explicaciones.";
 		String payload = "{\"model\":\"mistral-small-2603\",\"messages\":[{\"role\":\"user\",\"content\":\"" +
-			escapeJson(prompt) + "\"}],\"temperature\":0.1,\"max_tokens\":20}";
+			escapeJson(prompt) + "\"}],\"temperature\":0.8,\"max_tokens\":100}";
 
 		try {
 			URL url = new URL("https://api.mistral.ai/v1/chat/completions");
@@ -443,7 +458,9 @@ public class BLFacadeImplementation  implements BLFacade {
 				os.write(payload.getBytes("UTF-8"));
 			}
 
-			InputStream responseStream = connection.getResponseCode() >= 200 && connection.getResponseCode() < 300
+			int status = connection.getResponseCode();
+			System.out.println("[AI-SUGGESTION] api=RESPONSE status=" + status);
+			InputStream responseStream = status >= 200 && status < 300
 				? connection.getInputStream()
 				: connection.getErrorStream();
 			if (responseStream == null) {
@@ -465,8 +482,86 @@ public class BLFacadeImplementation  implements BLFacade {
 			}
 			return normalized;
 		} catch (IOException ex) {
+			System.out.println("[AI-SUGGESTION] api=ERROR message=" + ex.getMessage());
 			return null;
 		}
+	}
+
+	private String getEnvOrDotEnv(String key) {
+		String value = System.getenv(key);
+		if (value != null && !value.trim().isEmpty()) {
+			System.out.println("[AI-SUGGESTION] env=" + key + " source=ENV");
+			return value;
+		}
+		File envFile = resolveDotEnvFile();
+		String filePath = envFile == null ? "<null>" : envFile.getAbsolutePath();
+		System.out.println("[AI-SUGGESTION] env=" + key + " source=DOTENV path=" + filePath +
+			" exists=" + (envFile != null && envFile.isFile()));
+		String fromFile = readDotEnvValue(envFile, key);
+		if (fromFile != null && !fromFile.trim().isEmpty()) {
+			System.out.println("[AI-SUGGESTION] env=" + key + " source=DOTENV status=FOUND");
+		} else {
+			System.out.println("[AI-SUGGESTION] env=" + key + " source=DOTENV status=MISSING");
+		}
+		return fromFile;
+	}
+
+	private File resolveDotEnvFile() {
+		File jarDir = getJarDirectory();
+		if (jarDir != null) {
+			File envInJarDir = new File(jarDir, ".env");
+			if (envInJarDir.isFile()) {
+				return envInJarDir;
+			}
+		}
+		return new File(".env");
+	}
+
+	private File getJarDirectory() {
+		try {
+			Path location = Paths.get(BLFacadeImplementation.class
+				.getProtectionDomain()
+				.getCodeSource()
+				.getLocation()
+				.toURI());
+			if (Files.isRegularFile(location)) {
+				return location.getParent().toFile();
+			}
+			return location.toFile();
+		} catch (Exception ex) {
+			return new File(".");
+		}
+	}
+
+	private String readDotEnvValue(File envFile, String key) {
+		if (envFile == null || !envFile.isFile()) {
+			return null;
+		}
+		try (BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(envFile), "UTF-8"))) {
+			String line;
+			while ((line = reader.readLine()) != null) {
+				String trimmed = line.trim();
+				if (trimmed.isEmpty() || trimmed.startsWith("#")) {
+					continue;
+				}
+				int idx = trimmed.indexOf('=');
+				if (idx <= 0) {
+					continue;
+				}
+				String k = trimmed.substring(0, idx).trim();
+				if (!k.equals(key)) {
+					continue;
+				}
+				String value = trimmed.substring(idx + 1).trim();
+				if ((value.startsWith("\"") && value.endsWith("\"")) || (value.startsWith("'") && value.endsWith("'"))) {
+					value = value.substring(1, value.length() - 1).trim();
+				}
+				return value;
+			}
+		} catch (IOException ex) {
+			return null;
+		}
+		return null;
 	}
 
 	private String normalizeCategorySuggestion(String content) {
