@@ -16,6 +16,7 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.SwingConstants;
+import javax.swing.SwingWorker;
 import javax.swing.table.DefaultTableModel;
 
 import businessLogic.BLFacade;
@@ -27,6 +28,8 @@ public class FeedRecommendationsGUI extends JFrame {
     private final String buyerEmail;
     private final DefaultTableModel model;
     private final JTable table;
+    private final JButton btnRefresh;
+    private final JButton btnOffer;
     private final DecimalFormat scoreFormat = new DecimalFormat("0.000");
 
     public FeedRecommendationsGUI(String buyerEmail) {
@@ -63,11 +66,11 @@ public class FeedRecommendationsGUI extends JFrame {
         JPanel actions = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
         actions.setOpaque(false);
 
-        JButton btnRefresh = new JButton("Actualizar feed");
+        btnRefresh = new JButton("Actualizar feed");
         btnRefresh.addActionListener(e -> refreshFeed());
         actions.add(btnRefresh);
 
-        JButton btnOffer = new JButton("Hacer oferta");
+        btnOffer = new JButton("Hacer oferta");
         btnOffer.addActionListener(e -> openOfferDialog());
         actions.add(btnOffer);
 
@@ -78,22 +81,45 @@ public class FeedRecommendationsGUI extends JFrame {
     }
 
     private void refreshFeed() {
-        BLFacade facade = MainGUI.getBusinessLogic();
-        List<Sale> feed = facade.getPersonalizedFeed(buyerEmail, 30);
+        btnRefresh.setEnabled(false);
+        btnOffer.setEnabled(false);
 
-        model.setRowCount(0);
-        for (Sale sale : feed) {
-            float score = facade.getRecommendationScore(buyerEmail, sale.getSaleNumber());
-            String reason = facade.getRecommendationReason(buyerEmail, sale.getSaleNumber());
-            model.addRow(new Object[] {
-                sale.getTitle(),
-                sale.getPrice(),
-                facade.getCategoryForSale(sale.getSaleNumber()),
-                scoreFormat.format(score),
-                reason,
-                sale
-            });
-        }
+        SwingWorker<List<Sale>, Void> worker = new SwingWorker<List<Sale>, Void>() {
+            @Override
+            protected List<Sale> doInBackground() {
+                BLFacade facade = MainGUI.getBusinessLogic();
+                return facade.getPersonalizedFeed(buyerEmail, 30);
+            }
+
+            @Override
+            protected void done() {
+                try {
+                    BLFacade facade = MainGUI.getBusinessLogic();
+                    List<Sale> feed = get();
+                    model.setRowCount(0);
+                    for (Sale sale : feed) {
+                        float score = facade.getRecommendationScore(buyerEmail, sale.getSaleNumber());
+                        String reason = facade.getRecommendationReason(buyerEmail, sale.getSaleNumber());
+                        String category = sale.getCategory() == null || sale.getCategory().trim().isEmpty()
+                            ? "General" : sale.getCategory();
+                        model.addRow(new Object[] {
+                            sale.getTitle(),
+                            sale.getPrice(),
+                            category,
+                            scoreFormat.format(score),
+                            reason,
+                            sale
+                        });
+                    }
+                } catch (Exception ex) {
+                    JOptionPane.showMessageDialog(FeedRecommendationsGUI.this, "No se pudo cargar el feed");
+                } finally {
+                    btnRefresh.setEnabled(true);
+                    btnOffer.setEnabled(true);
+                }
+            }
+        };
+        worker.execute();
     }
 
     private void openOfferDialog() {

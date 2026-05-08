@@ -1,8 +1,14 @@
 package businessLogic;
 import java.awt.Image;
 import java.awt.image.BufferedImage;
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -10,6 +16,8 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.imageio.ImageIO;
 import javax.jws.WebMethod;
@@ -381,6 +389,10 @@ public class BLFacadeImplementation  implements BLFacade {
 	public synchronized List<String> suggestCategories(String title, String description) {
 		List<String> suggestions = new ArrayList<String>();
 		String inferred = inferCategory(title, description);
+		String aiSuggestion = callMistralCategorySuggestion(title, description, getAllCategories());
+		if (aiSuggestion != null && !aiSuggestion.trim().isEmpty()) {
+			inferred = aiSuggestion;
+		}
 		suggestions.add(inferred);
 		for (String category : getAllCategories()) {
 			if (category.equalsIgnoreCase(inferred)) {
@@ -396,6 +408,125 @@ public class BLFacadeImplementation  implements BLFacade {
 			}
 		}
 		return suggestions;
+	}
+
+	private String callMistralCategorySuggestion(String title, String description, List<String> categories) {
+		String apiKey = System.getenv("MISTRAL_API");
+		if (apiKey == null || apiKey.trim().isEmpty()) {
+			return null;
+		}
+		if (categories == null || categories.isEmpty()) {
+			return null;
+		}
+
+		String prompt = "Devuelve solo el nombre de la categoria mas adecuada, sin comillas. " +
+			"Si ninguna encaja, puedes sugerir una categoria nueva. " +
+			"Categorias existentes: " + String.join(", ", categories) + ". " +
+			"Titulo: " + (title == null ? "" : title) + ". " +
+			"Descripcion: " + (description == null ? "" : description) + ".";
+		String payload = "{\"model\":\"mistral-small-2603\",\"messages\":[{\"role\":\"user\",\"content\":\"" +
+			escapeJson(prompt) + "\"}],\"temperature\":0.1,\"max_tokens\":20}";
+
+		try {
+			URL url = new URL("https://api.mistral.ai/v1/chat/completions");
+			HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+			connection.setRequestMethod("POST");
+			connection.setConnectTimeout(4000);
+			connection.setReadTimeout(5000);
+			connection.setDoOutput(true);
+			connection.setRequestProperty("Content-Type", "application/json");
+			connection.setRequestProperty("Authorization", "Bearer " + apiKey.trim());
+
+			try (OutputStream os = connection.getOutputStream()) {
+				os.write(payload.getBytes("UTF-8"));
+			}
+
+			InputStream responseStream = connection.getResponseCode() >= 200 && connection.getResponseCode() < 300
+				? connection.getInputStream()
+				: connection.getErrorStream();
+			if (responseStream == null) {
+				return null;
+			}
+			String response = readAll(responseStream);
+			String content = extractContent(response);
+			if (content == null) {
+				return null;
+			}
+			String normalized = normalizeCategorySuggestion(content);
+			if (normalized == null) {
+				return null;
+			}
+			for (String category : categories) {
+				if (category.equalsIgnoreCase(normalized)) {
+					return category;
+				}
+			}
+			return normalized;
+		} catch (IOException ex) {
+			return null;
+		}
+	}
+
+	private String normalizeCategorySuggestion(String content) {
+		if (content == null) {
+			return null;
+		}
+		String value = content.trim();
+		if ((value.startsWith("\"") && value.endsWith("\"")) || (value.startsWith("'") && value.endsWith("'"))) {
+			value = value.substring(1, value.length() - 1).trim();
+		}
+		if (value.isEmpty() || value.length() > 40) {
+			return null;
+		}
+		if (value.contains("\n") || value.contains("\r")) {
+			return null;
+		}
+		return value;
+	}
+
+	private String extractContent(String response) {
+		if (response == null) {
+			return null;
+		}
+		Pattern pattern = Pattern.compile("\\\"content\\\"\\s*:\\s*\\\"(.*?)\\\"", Pattern.DOTALL);
+		Matcher matcher = pattern.matcher(response);
+		if (!matcher.find()) {
+			return null;
+		}
+		return unescapeJson(matcher.group(1));
+	}
+
+	private String readAll(InputStream input) throws IOException {
+		StringBuilder builder = new StringBuilder();
+		try (BufferedReader reader = new BufferedReader(new InputStreamReader(input, "UTF-8"))) {
+			String line;
+			while ((line = reader.readLine()) != null) {
+				builder.append(line);
+			}
+		}
+		return builder.toString();
+	}
+
+	private String escapeJson(String value) {
+		if (value == null) {
+			return "";
+		}
+		return value.replace("\\", "\\\\")
+			.replace("\"", "\\\"")
+			.replace("\n", "\\n")
+			.replace("\r", "\\r")
+			.replace("\t", "\\t");
+	}
+
+	private String unescapeJson(String value) {
+		if (value == null) {
+			return null;
+		}
+		return value.replace("\\n", "\n")
+			.replace("\\r", "\r")
+			.replace("\\t", "\t")
+			.replace("\\\"", "\"")
+			.replace("\\\\", "\\");
 	}
 
 	@WebMethod
@@ -466,7 +597,7 @@ public class BLFacadeImplementation  implements BLFacade {
 		}
 
 		for (Sale sale : sales) {
-			String category = getCategoryForSale(sale.getSaleNumber());
+			String category = resolveCategoryForSale(sale);
 			float categoryScore = computeCategoryScore(category, preferredCategories);
 			float priceScore = computePriceScore(sale.getPrice(), targetPrice);
 			float freshnessScore = computeFreshnessScore(sale.getPublicationDate());
@@ -524,7 +655,7 @@ public class BLFacadeImplementation  implements BLFacade {
 		float buyerTargetPrice = getBuyerTargetPrice(buyerEmail, ranked);
 
 		for (Sale sale : ranked) {
-			String saleCategoryName = getCategoryForSale(sale.getSaleNumber());
+			String saleCategoryName = resolveCategoryForSale(sale);
 			if (!requestedCategory.isEmpty() && !saleCategoryName.equalsIgnoreCase(requestedCategory)) {
 				continue;
 			}
@@ -621,7 +752,7 @@ public class BLFacadeImplementation  implements BLFacade {
 			if (offer == null || offer.getSale() == null) {
 				continue;
 			}
-			String category = getCategoryForSale(offer.getSale().getSaleNumber());
+			String category = resolveCategoryForSale(offer.getSale());
 			preferred.put(category, preferred.getOrDefault(category, 0) + 1);
 		}
 		return preferred;
@@ -658,12 +789,23 @@ public class BLFacadeImplementation  implements BLFacade {
 	private Map<Integer, Integer> getSalesPopularity() {
 		Map<Integer, Integer> popularity = new HashMap<Integer, Integer>();
 		List<Sale> allSales = execute(() -> dbManager.getSales(""));
+		Map<String, List<AcceptedOffer>> offersBySeller = new HashMap<String, List<AcceptedOffer>>();
 		for (Sale sale : allSales) {
+			if (sale == null || sale.getSeller() == null) {
+				continue;
+			}
+			String sellerEmail = sale.getSeller().getEmail();
+			if (!offersBySeller.containsKey(sellerEmail)) {
+				offersBySeller.put(sellerEmail, execute(() -> dbManager.getAcceptedOffersBySeller(sellerEmail)));
+			}
 			popularity.put(sale.getSaleNumber(), 0);
 		}
 		for (Sale sale : allSales) {
+			if (sale == null || sale.getSeller() == null) {
+				continue;
+			}
 			Integer saleNumber = sale.getSaleNumber();
-			List<AcceptedOffer> offers = execute(() -> dbManager.getAcceptedOffersBySeller(sale.getSeller().getEmail()));
+			List<AcceptedOffer> offers = offersBySeller.getOrDefault(sale.getSeller().getEmail(), Collections.<AcceptedOffer>emptyList());
 			int count = 0;
 			for (AcceptedOffer offer : offers) {
 				if (offer.getSale() != null && saleNumber.equals(offer.getSale().getSaleNumber())) {
@@ -673,6 +815,17 @@ public class BLFacadeImplementation  implements BLFacade {
 			popularity.put(saleNumber, count);
 		}
 		return popularity;
+	}
+
+	private String resolveCategoryForSale(Sale sale) {
+		if (sale == null) {
+			return "General";
+		}
+		String category = sale.getCategory();
+		if (category != null && !category.trim().isEmpty()) {
+			return category;
+		}
+		return inferCategory(sale.getTitle(), sale.getDescription());
 	}
 
 	private float computeCategoryScore(String category, Map<String, Integer> preferredCategories) {

@@ -1,6 +1,7 @@
 package configuration;
 
 import java.io.File;
+import java.io.InputStream;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -15,7 +16,7 @@ import org.w3c.dom.NodeList;
  */
 public class ConfigXML {
 	
-	private String configFile = "src/main/resources/config.xml";
+	private String configFile = "config.xml";
 
 	private String businessLogicNode;
 
@@ -76,7 +77,7 @@ public class ConfigXML {
 		  try {
 			  DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
 			  DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
-			  Document doc = dBuilder.parse(new File(configFile));
+			  Document doc = loadConfigDocument(dBuilder);
 			  doc.getDocumentElement().normalize();
 
 			  NodeList list = doc.getElementsByTagName("config");
@@ -125,10 +126,18 @@ public class ConfigXML {
 			  System.out.println("\t dataBaseInitialized="+isDatabaseInitialized); 
 					  
 		  } catch (Exception e) {
-			System.out.println("Error in ConfigXML.java: problems with "+ configFile);
+			System.out.println("Error in ConfigXML.java: problems with " + configFile);
 		    e.printStackTrace();
 		  }		
 		
+	}
+
+	private Document loadConfigDocument(DocumentBuilder dBuilder) throws Exception {
+		InputStream resourceStream = ConfigXML.class.getClassLoader().getResourceAsStream(configFile);
+		if (resourceStream != null) {
+			return dBuilder.parse(resourceStream);
+		}
+		return dBuilder.parse(new File("src/main/resources/" + configFile));
 	}
 
 	private static String getTagValue(String sTag, Element eElement)

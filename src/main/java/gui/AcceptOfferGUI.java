@@ -1,6 +1,7 @@
 package gui;
 
 import java.awt.BorderLayout;
+import java.awt.Dimension;
 import java.awt.Font;
 import java.util.Date;
 import java.util.List;
@@ -86,6 +87,8 @@ public class AcceptOfferGUI extends JFrame {
         pnlNegotiate.add(new JLabel(labels.getString("AcceptOfferGUI.NegotiatedPrice")));
         txtNegotiatedPrice = new JTextField(10);
         txtNegotiatedPrice.setToolTipText(labels.getString("AcceptOfferGUI.NegotiateTip"));
+        Dimension priceSize = txtNegotiatedPrice.getPreferredSize();
+        txtNegotiatedPrice.setPreferredSize(new Dimension(priceSize.width, 28));
         pnlNegotiate.add(txtNegotiatedPrice);
         pnlBottom.add(pnlNegotiate, BorderLayout.WEST);
         

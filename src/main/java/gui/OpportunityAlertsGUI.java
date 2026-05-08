@@ -18,6 +18,7 @@ import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.SwingConstants;
+import javax.swing.SwingWorker;
 import javax.swing.table.DefaultTableModel;
 
 import businessLogic.BLFacade;
@@ -32,6 +33,8 @@ public class OpportunityAlertsGUI extends JFrame {
     private final JTextField txtMaxPrice;
     private final DefaultTableModel model;
     private final JTable table;
+    private final JButton btnSearch;
+    private final JButton btnOffer;
 
     public OpportunityAlertsGUI(String buyerEmail) {
         this.buyerEmail = buyerEmail;
@@ -67,7 +70,7 @@ public class OpportunityAlertsGUI extends JFrame {
         txtMaxPrice = new JTextField(7);
         filters.add(txtMaxPrice);
 
-        JButton btnSearch = new JButton("Buscar alertas");
+        btnSearch = new JButton("Buscar alertas");
         btnSearch.addActionListener(e -> searchAlerts());
         filters.add(btnSearch);
 
@@ -90,7 +93,7 @@ public class OpportunityAlertsGUI extends JFrame {
 
         JPanel actions = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
         actions.setOpaque(false);
-        JButton btnOffer = new JButton("Hacer oferta");
+        btnOffer = new JButton("Hacer oferta");
         btnOffer.addActionListener(e -> openOfferDialog());
         actions.add(btnOffer);
 
@@ -102,17 +105,37 @@ public class OpportunityAlertsGUI extends JFrame {
     }
 
     private void loadCategories() {
-        BLFacade facade = MainGUI.getBusinessLogic();
-        DefaultComboBoxModel<String> modelCat = new DefaultComboBoxModel<String>();
-        modelCat.addElement("Todas");
-        for (String category : facade.getAllCategories()) {
-            modelCat.addElement(category);
-        }
-        cmbCategory.setModel(modelCat);
+        btnSearch.setEnabled(false);
+        btnOffer.setEnabled(false);
+
+        SwingWorker<DefaultComboBoxModel<String>, Void> worker = new SwingWorker<DefaultComboBoxModel<String>, Void>() {
+            @Override
+            protected DefaultComboBoxModel<String> doInBackground() {
+                BLFacade facade = MainGUI.getBusinessLogic();
+                DefaultComboBoxModel<String> modelCat = new DefaultComboBoxModel<String>();
+                modelCat.addElement("Todas");
+                for (String category : facade.getAllCategories()) {
+                    modelCat.addElement(category);
+                }
+                return modelCat;
+            }
+
+            @Override
+            protected void done() {
+                try {
+                    cmbCategory.setModel(get());
+                } catch (Exception ex) {
+                    JOptionPane.showMessageDialog(OpportunityAlertsGUI.this, "No se pudieron cargar categorias");
+                } finally {
+                    btnSearch.setEnabled(true);
+                    btnOffer.setEnabled(true);
+                }
+            }
+        };
+        worker.execute();
     }
 
     private void searchAlerts() {
-        BLFacade facade = MainGUI.getBusinessLogic();
         String category = (String) cmbCategory.getSelectedItem();
         if ("Todas".equalsIgnoreCase(category)) {
             category = null;
@@ -130,17 +153,46 @@ public class OpportunityAlertsGUI extends JFrame {
             }
         }
 
-        List<Sale> alerts = facade.getOpportunityAlerts(buyerEmail, category, keyword, maxPrice, 30);
-        model.setRowCount(0);
-        for (Sale sale : alerts) {
-            model.addRow(new Object[] {
-                sale.getTitle(),
-                sale.getPrice(),
-                facade.getCategoryForSale(sale.getSaleNumber()),
-                facade.getOpportunityReason(buyerEmail, sale.getSaleNumber()),
-                sale
-            });
-        }
+        btnSearch.setEnabled(false);
+        btnOffer.setEnabled(false);
+
+        final String selectedCategory = category;
+        final String selectedKeyword = keyword;
+        final Float selectedMaxPrice = maxPrice;
+
+        SwingWorker<List<Sale>, Void> worker = new SwingWorker<List<Sale>, Void>() {
+            @Override
+            protected List<Sale> doInBackground() {
+                BLFacade facade = MainGUI.getBusinessLogic();
+                return facade.getOpportunityAlerts(buyerEmail, selectedCategory, selectedKeyword, selectedMaxPrice, 30);
+            }
+
+            @Override
+            protected void done() {
+                try {
+                    BLFacade facade = MainGUI.getBusinessLogic();
+                    List<Sale> alerts = get();
+                    model.setRowCount(0);
+                    for (Sale sale : alerts) {
+                        String categoryName = sale.getCategory() == null || sale.getCategory().trim().isEmpty()
+                            ? "General" : sale.getCategory();
+                        model.addRow(new Object[] {
+                            sale.getTitle(),
+                            sale.getPrice(),
+                            categoryName,
+                            facade.getOpportunityReason(buyerEmail, sale.getSaleNumber()),
+                            sale
+                        });
+                    }
+                } catch (Exception ex) {
+                    JOptionPane.showMessageDialog(OpportunityAlertsGUI.this, "No se pudieron cargar alertas");
+                } finally {
+                    btnSearch.setEnabled(true);
+                    btnOffer.setEnabled(true);
+                }
+            }
+        };
+        worker.execute();
     }
 
     private void openOfferDialog() {

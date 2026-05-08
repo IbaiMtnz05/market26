@@ -65,7 +65,7 @@ public class ShowSaleGUI extends JFrame {
 		
 		jLabelPrice.setBounds(new Rectangle(6, 166, 101, 20));
 		fieldPrice.setEditable(false);
-		fieldPrice.setBounds(new Rectangle(137, 166, 60, 20));
+		fieldPrice.setBounds(new Rectangle(137, 166, 60, 28));
 
 		
 		scrollPaneEvents.setBounds(new Rectangle(25, 44, 346, 116));
@@ -93,7 +93,7 @@ public class ShowSaleGUI extends JFrame {
 		this.getContentPane().add(fieldPrice, null);
 		
 		jLabelProductStatus.setBounds(new Rectangle(40, 15, 140, 25));
-		jLabelProductStatus.setBounds(6, 187, 140, 25);
+		jLabelProductStatus.setBounds(6, 200, 140, 25);
 		getContentPane().add(jLabelProductStatus);
 		
 		jLabelDescription.setBounds(6, 81, 109, 16);
@@ -130,7 +130,7 @@ public class ShowSaleGUI extends JFrame {
 		}
 		System.out.println("status: "+sale.getStatus());
 		statusField = new JLabel(Utils.getStatus(sale.getStatus())); 
-		statusField.setBounds(137, 191, 92, 16);
+		statusField.setBounds(137, 204, 92, 16);
 		getContentPane().add(statusField);
 		setVisible(true);
 	}	 

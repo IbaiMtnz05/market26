@@ -7,7 +7,7 @@ import javax.imageio.ImageIO;
 import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
 
-import com.toedter.calendar.JCalendar;
+import com.toedter.calendar.JDateChooser;
 
 import java.awt.*;
 import java.awt.event.*;
@@ -16,8 +16,6 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.awt.image.BufferedImage;
-import java.beans.PropertyChangeEvent;
-import java.beans.PropertyChangeListener;
 
 import businessLogic.BLFacade;
 import configuration.UtilDate;
@@ -57,9 +55,7 @@ public class CreateSaleGUI extends JFrame {
 	private JButton btnSuggestCategory = new JButton("Sugerir categoria");
 	private JButton btnProposeCategory = new JButton("Proponer categoria");
 
-	private JCalendar jCalendar = new JCalendar();
-	private Calendar calendarAct = null;
-	private Calendar calendarAnt = null;
+    private JDateChooser dateChooser = new JDateChooser();
 
 	private JScrollPane scrollPaneEvents = new JScrollPane();
 	
@@ -86,7 +82,7 @@ public class CreateSaleGUI extends JFrame {
 		jLabelTitle.setBounds(new Rectangle(6, 24, 92, 20));
 		
 		jLabelPrice.setBounds(new Rectangle(6, 141, 101, 20));
-		jTextFieldPrice.setBounds(new Rectangle(97, 141, 60, 20));
+		jTextFieldPrice.setBounds(new Rectangle(97, 141, 60, 28));
 
 		
 		scrollPaneEvents.setBounds(new Rectangle(25, 44, 346, 116));
@@ -107,7 +103,7 @@ public class CreateSaleGUI extends JFrame {
 						String s=(String)jComboBoxStatus.getSelectedItem();
 						int numStatus=status.indexOf(s);
 						Sale created = facade.createSale(fieldTitle.getText(), fieldDescription.getText(), numStatus, price,
-								UtilDate.trim(jCalendar.getDate()), sellerMail, targetFile);
+									UtilDate.trim(dateChooser.getDate()), sellerMail, targetFile);
 						String selectedCategory = (String) jComboBoxCategory.getSelectedItem();
 						if (created != null && selectedCategory != null && !selectedCategory.trim().isEmpty()) {
 							facade.assignCategoryToSale(created.getSaleNumber(), selectedCategory);
@@ -264,45 +260,20 @@ public class CreateSaleGUI extends JFrame {
 		
 		getContentPane().add(btnNewButton_2);
 		
-		jCalendar.setBounds(new Rectangle(360, 50, 225, 150));
-		this.getContentPane().add(jCalendar, null);
+		dateChooser.setBounds(new Rectangle(360, 50, 210, 28));
+		dateChooser.setDateFormatString("dd/MM/yyyy");
+		this.getContentPane().add(dateChooser, null);
 		
 		JLabel jLabelPublicationDate = new JLabel(ResourceBundle.getBundle("Etiquetas").getString("CreateSaleGUI.PublicationDate"));
 		jLabelPublicationDate.setBounds(new Rectangle(6, 24, 92, 20));
 		jLabelPublicationDate.setBounds(360, 26, 197, 20);
 		getContentPane().add(jLabelPublicationDate);
 
-		this.jCalendar.addPropertyChangeListener(new PropertyChangeListener() {
-			public void propertyChange(PropertyChangeEvent propertychangeevent) {
-//			
-				if (propertychangeevent.getPropertyName().equals("locale")) {
-					jCalendar.setLocale((Locale) propertychangeevent.getNewValue());
-				} else if (propertychangeevent.getPropertyName().equals("calendar")) {
-					calendarAnt = (Calendar) propertychangeevent.getOldValue();
-					calendarAct = (Calendar) propertychangeevent.getNewValue();
-					
-					int monthAnt = calendarAnt.get(Calendar.MONTH);
-					int monthAct = calendarAct.get(Calendar.MONTH);
-					if (monthAct!=monthAnt) {
-						if (monthAct==monthAnt+2) { 
-							// Si en JCalendar está 30 de enero y se avanza al mes siguiente, devolverá 2 de marzo (se toma como equivalente a 30 de febrero)
-							// Con este código se dejará como 1 de febrero en el JCalendar
-							calendarAct.set(Calendar.MONTH, monthAnt+1);
-							calendarAct.set(Calendar.DAY_OF_MONTH, 1);
-						}
-						
-						jCalendar.setCalendar(calendarAct);						
-	
-					}
-					jCalendar.setCalendar(calendarAct);
-					int offset = jCalendar.getCalendar().get(Calendar.DAY_OF_WEEK);
-					
-						if (Locale.getDefault().equals(new Locale("es")))
-							offset += 4;
-						else
-							offset += 5;
-				Component o = (Component) jCalendar.getDayChooser().getDayPanel().getComponent(jCalendar.getCalendar().get(Calendar.DAY_OF_MONTH) + offset);
-				}}});
+		dateChooser.setLocale(Locale.getDefault());
+		dateChooser.setDate(new Date());
+		applyDateFieldTheme();
+		dateChooser.addPropertyChangeListener("date", evt -> applyDateFieldTheme());
+		dateChooser.addPropertyChangeListener("dateEditor", evt -> applyDateFieldTheme());
 		
 	}	 
 
@@ -326,6 +297,16 @@ public class CreateSaleGUI extends JFrame {
         g.dispose();
         return resizedImage;
     }
+
+	private void applyDateFieldTheme() {
+		JTextField dateField = (JTextField) dateChooser.getDateEditor().getUiComponent();
+		dateField.setBackground(new Color(21, 24, 30));
+		dateField.setForeground(Color.WHITE);
+		dateField.setCaretColor(Color.WHITE);
+		dateField.setDisabledTextColor(Color.WHITE);
+		dateChooser.setBackground(new Color(21, 24, 30));
+		dateChooser.setForeground(Color.WHITE);
+	}
 	private String check_fields_Errors() {
 		
 		try {
