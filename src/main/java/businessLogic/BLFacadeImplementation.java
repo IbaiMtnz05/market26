@@ -433,16 +433,21 @@ public class BLFacadeImplementation  implements BLFacade {
 		}
 		System.out.println("[AI-SUGGESTION] api=CALL categories=" + categories.size());
 
-		String prompt = "Actúa como un clasificador de contenido estricto. " +
-		"Tu tarea es asignar la categoría más precisa.\n" +
-		"Categorías existentes: " + String.join(", ", categories) + ".\n" +
-		"REGLA CRÍTICA: NO fuerces el texto en una categoría existente si no es una coincidencia perfecta. " +
-		"Si ninguna categoría de la lista describe el contenido con total exactitud, es tu OBLIGACIÓN crear y sugerir una categoría nueva más adecuada.\n\n" +
-		"Título: " + (title == null ? "" : title) + "\n" +
-		"Descripción: " + (description == null ? "" : description) + "\n\n" +
-		"Devuelve únicamente el nombre de la categoría final (existente o nueva), sin comillas ni explicaciones.";
+		String prompt = "Eres un experto clasificador de productos. Tu objetivo es asignar la categoría MÁS EXACTA posible.\n" +
+    		"Categorías existentes: " + String.join(", ", categories) + ".\n\n" +
+    		"REGLAS CRÍTICAS:\n" +
+   		 "1. Presta mucha atención al público objetivo y el uso del producto (ej. un artículo para niños no debe ir en categorías de adultos o coleccionismo puro).\n" +
+    		"2. NO fuerces la categorización. Si el producto necesita una categoría como 'Juguetes' o 'Infantil' y no está en la lista, DEBES crearla.\n\n" +
+    		"EJEMPLOS DE COMPORTAMIENTO ESPERADO:\n" +
+   		"- Título: 'Juguete de trenes', Desc: 'Ideal para niños'. Categorías existentes: [Coleccionismo, Hogar]. -> Resultado: Juguetes\n" +
+   		"- Título: 'Destornillador', Desc: 'Acero inoxidable'. Categorías existentes: [Ropa, Alimentación]. -> Resultado: Ferretería\n\n" +
+    		"AHORA CLASIFICA ESTE PRODUCTO:\n" +
+   		"Título: " + (title == null ? "" : title) + "\n" +
+    		"Descripción: " + (description == null ? "" : description) + "\n\n" +
+    		"Devuelve ÚNICAMENTE el nombre de la categoría final, sin comillas ni texto adicional.";
+
 		String payload = "{\"model\":\"mistral-small-2603\",\"messages\":[{\"role\":\"user\",\"content\":\"" +
-			escapeJson(prompt) + "\"}],\"temperature\":0.8,\"max_tokens\":100}";
+			escapeJson(prompt) + "\"}],\"temperature\":0.1,\"max_tokens\":100}";
 
 		try {
 			URL url = new URL("https://api.mistral.ai/v1/chat/completions");
