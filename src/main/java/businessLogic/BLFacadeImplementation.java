@@ -411,7 +411,9 @@ public class BLFacadeImplementation  implements BLFacade {
 	}
 
 	private String callMistralCategorySuggestion(String title, String description, List<String> categories) {
-		String apiKey = System.getenv("MISTRAL_API");
+		// Para probarlo de manera menos segura, sin complicaciones de path, te dejo una API KEY
+		String apiKey = System.getenv("MISTRAL_API"); // Comentar
+		//String apiKey = "PASTE HERE"; // Desconmentar
 		if (apiKey == null || apiKey.trim().isEmpty()) {
 			return null;
 		}
